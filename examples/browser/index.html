@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hyper Scheduler 浏览器示例</title>
+    <style>
+        body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; }
+        .log-box { background: #f5f5f5; padding: 15px; border-radius: 4px; height: 300px; overflow-y: auto; font-family: monospace; border: 1px solid #ddd; }
+        button { padding: 8px 16px; margin-right: 10px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>Hyper Scheduler 浏览器示例</h1>
+    <p>请打开控制台 (F12) 查看详细日志，或者观察下方的日志面板。</p>
+    <p>页面右下角应该会出现调试面板。</p>
+
+    <div class="controls">
+        <button id="btn-start">启动调度器</button>
+        <button id="btn-stop">停止调度器</button>
+    </div>
+    <br>
+    <div id="logs" class="log-box"></div>
+
+    <!-- 引入外部依赖 cron-parser (UMD) -->
+    <script src="https://unpkg.com/cron-parser@4.9.0/lib/parser.js"></script>
+    
+    <!-- 引入 Hyper Scheduler (UMD) -->
+    <script src="../../dist/index.umd.cjs"></script>
+    
+    <script>
+        // 简单的日志辅助函数
+        const logBox = document.getElementById('logs');
+        function log(msg) {
+            const line = document.createElement('div');
+            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+            logBox.appendChild(line);
+            logBox.scrollTop = logBox.scrollHeight;
+            console.log(msg);
+        }
+
+        // 确保 CronParser 全局可用 (如果 UMD 构建未自动处理)
+        // 注意：Vite UMD 构建通常会将 external 依赖期望为全局变量
+        // 这里假设 cron-parser 在 window.cronParser 或者由 hyper-scheduler 内部处理
+        
+        const { Scheduler } = window.HyperScheduler;
+        
+        const scheduler = new Scheduler({ debug: true });
+        
+        // 1. Cron 任务
+        scheduler.createTask({
+            id: 'browser-cron',
+            schedule: '*/2 * * * * *', // 每 2 秒
+            handler: () => {
+                log('Cron 任务 (每2秒) 触发!');
+            }
+        });
+
+        // 2. Interval 任务
+        scheduler.createTask({
+            id: 'browser-interval',
+            schedule: '5s', // 每 5 秒
+            handler: () => {
+                log('Interval 任务 (每5秒) 触发!');
+            }
+        });
+
+        // 3. Tags 任务演示
+        scheduler.createTask({
+            id: 'browser-tags-demo',
+            schedule: '10s',
+            tags: ['demo', 'browser'],
+            handler: () => {
+                log('Tags 任务 [demo, browser] 触发!');
+            }
+        });
+        
+        // 绑定按钮事件
+        document.getElementById('btn-start').onclick = () => {
+            scheduler.start();
+            log('调度器已启动');
+        };
+
+        document.getElementById('btn-stop').onclick = () => {
+            scheduler.stop();
+            log('调度器已停止');
+        };
+
+        log('页面已加载，请点击“启动”开始测试。');
+    </script>
+</body>
+</html>

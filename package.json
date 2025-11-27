@@ -1,0 +1,52 @@
+{
+  "name": "hyper-scheduler",
+  "version": "1.0.0",
+  "description": "A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron expressions and Web Workers.",
+  "type": "module",
+  "main": "./dist/index.umd.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "dev": "vite",
+    "docs:dev": "vitepress dev docs",
+    "docs:build": "vitepress build docs",
+    "example:node": "node examples/node/simple.js",
+    "example:browser": "vite examples/browser",
+    "example:vue": "npm install --prefix examples/vue-demo && npm run dev --prefix examples/vue-demo",
+    "example:react": "npm install --prefix examples/react-demo && npm run dev --prefix examples/react-demo",
+    "build": "tsc && vite build",
+    "test": "vitest",
+    "lint": "eslint . --ext .ts"
+  },
+  "keywords": [
+    "scheduler",
+    "cron",
+    "task",
+    "timer",
+    "worker"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "cron-parser": "^4.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^8.48.0",
+    "@typescript-eslint/parser": "^8.48.0",
+    "@vitest/coverage-v8": "^4.0.14",
+    "eslint": "^8.0.0",
+    "jsdom": "^27.2.0",
+    "rollup-plugin-visualizer": "^6.0.5",
+    "typescript": "^5.0.0",
+    "vite": "^5.0.0",
+    "vitepress": "^1.6.4",
+    "vitest": "^4.0.14"
+  }
+}

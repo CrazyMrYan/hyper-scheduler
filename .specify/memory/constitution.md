@@ -1,50 +1,33 @@
-# [PROJECT_NAME] Constitution
-<!-- Example: Spec Constitution, TaskFlow Constitution, etc. -->
+<!--
+    版本变更: None → 1.0.0
+    修改的原则: 全部
+    新增部分: 核心原则, 治理
+    删除部分: 无
+    需要更新的模板:
+        - ✅ .specify/templates/plan-template.md
+        - ✅ .specify/templates/spec-template.md
+        - ✅ .specify/templates/tasks-template.md
+    待办事项: 无
+-->
+# 超级调度器 (Hyper-Scheduler) 项目章程
 
-## Core Principles
+## 核心原则
 
-### [PRINCIPLE_1_NAME]
-<!-- Example: I. Library-First -->
-[PRINCIPLE_1_DESCRIPTION]
-<!-- Example: Every feature starts as a standalone library; Libraries must be self-contained, independently testable, documented; Clear purpose required - no organizational-only libraries -->
+### I. 代码质量
+代码必须清晰、可维护且有据可查。所有代码提交都必须经过代码审查，并遵守项目既定的编码标准。严禁使用未经审查或不符合标准的代码。
 
-### [PRINCIPLE_2_NAME]
-<!-- Example: II. CLI Interface -->
-[PRINCIPLE_2_DESCRIPTION]
-<!-- Example: Every library exposes functionality via CLI; Text in/out protocol: stdin/args → stdout, errors → stderr; Support JSON + human-readable formats -->
+### II. 测试标准 (不可协商)
+所有新功能都必须附有全面的单元测试和集成测试，并遵循测试驱动开发 (TDD) 的实践。在实现功能之前，必须先编写失败的测试。代码覆盖率必须达到项目设定的最低标准。
 
-### [PRINCIPLE_3_NAME]
-<!-- Example: III. Test-First (NON-NEGOTIABLE) -->
-[PRINCIPLE_3_DESCRIPTION]
-<!-- Example: TDD mandatory: Tests written → User approved → Tests fail → Then implement; Red-Green-Refactor cycle strictly enforced -->
+### III. 用户体验一致性
+所有面向用户的功能和界面都必须遵循项目统一的设计语言和交互模式，以确保一致和直观的用户体验。任何对用户界面的更改都必须经过设计审查。
 
-### [PRINCIPLE_4_NAME]
-<!-- Example: IV. Integration Testing -->
-[PRINCIPLE_4_DESCRIPTION]
-<!-- Example: Focus areas requiring integration tests: New library contract tests, Contract changes, Inter-service communication, Shared schemas -->
+### IV. 性能要求
+所有代码和功能都必须满足明确的性能标准。必须对关键路径进行性能分析和基准测试，以防止性能下降。
 
-### [PRINCIPLE_5_NAME]
-<!-- Example: V. Observability, VI. Versioning & Breaking Changes, VII. Simplicity -->
-[PRINCIPLE_5_DESCRIPTION]
-<!-- Example: Text I/O ensures debuggability; Structured logging required; Or: MAJOR.MINOR.BUILD format; Or: Start simple, YAGNI principles -->
+## 治理
+本章程是项目开发的最高准则，其优先级高于所有其他实践或惯例。对本章程的任何修订都必须经过正式的审查流程，并记录在案。
 
-## [SECTION_2_NAME]
-<!-- Example: Additional Constraints, Security Requirements, Performance Standards, etc. -->
+所有代码合并请求 (Pull Requests) 和代码审查都必须验证是否符合本章程。任何复杂性的增加都必须有充分的理由。
 
-[SECTION_2_CONTENT]
-<!-- Example: Technology stack requirements, compliance standards, deployment policies, etc. -->
-
-## [SECTION_3_NAME]
-<!-- Example: Development Workflow, Review Process, Quality Gates, etc. -->
-
-[SECTION_3_CONTENT]
-<!-- Example: Code review requirements, testing gates, deployment approval process, etc. -->
-
-## Governance
-<!-- Example: Constitution supersedes all other practices; Amendments require documentation, approval, migration plan -->
-
-[GOVERNANCE_RULES]
-<!-- Example: All PRs/reviews must verify compliance; Complexity must be justified; Use [GUIDANCE_FILE] for runtime development guidance -->
-
-**Version**: [CONSTITUTION_VERSION] | **Ratified**: [RATIFICATION_DATE] | **Last Amended**: [LAST_AMENDED_DATE]
-<!-- Example: Version: 2.1.1 | Ratified: 2025-06-13 | Last Amended: 2025-07-16 -->
+**版本**: 1.0.0 | **批准日期**: 2025-11-25 | **最后修订**: 2025-11-25

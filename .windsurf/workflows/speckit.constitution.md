@@ -1,10 +1,11 @@
 ---
 description: Create or update the project constitution from interactive or provided principle inputs, ensuring all dependent templates stay in sync.
-handoffs: 
-  - label: Build Specification
-    agent: speckit.specify
-    prompt: Implement the feature specification based on the updated constitution. I want to build...
+auto_execution_mode: 1
 ---
+
+## 语言限制
+
+模型的请求思考响应，全部必须使用中文，包括注释和文档。
 
 ## User Input
 

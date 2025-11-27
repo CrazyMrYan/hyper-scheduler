@@ -1,115 +1,122 @@
-# Feature Specification: [FEATURE NAME]
+# 功能规范: [功能名称]
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
-**Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
+**功能分支**: `[###-功能名称]`
+**创建日期**: [日期]
+**状态**: 草稿
+**输入**: 用户描述: "$ARGUMENTS"
 
-## User Scenarios & Testing *(mandatory)*
+## 用户场景与测试 *(必填)*
 
 <!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
+  重要提示: 用户故事应按重要性排序作为用户旅程进行优先级排序。
+  每个用户故事/旅程都必须是可独立测试的 - 意味着如果您只实现其中一个，
+  您仍然应该拥有一个可交付价值的最小可行产品 (MVP)。
+
+  为每个故事分配优先级 (P1, P2, P3 等)，其中 P1 是最关键的。
+  将每个故事视为一个独立的功能切片，它可以:
+  - 独立开发
+  - 独立测试
+  - 独立部署
+  - 独立向用户演示
 -->
 
-### User Story 1 - [Brief Title] (Priority: P1)
+### 用户故事 1 - [简要标题] (优先级: P1)
 
-[Describe this user journey in plain language]
+[用通俗易懂的语言描述此用户旅程]
 
-**Why this priority**: [Explain the value and why it has this priority level]
+**为何此优先级**: [解释其价值以及为何具有此优先级]
 
-**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
+**独立测试**: [描述如何独立测试此功能 - 例如, "可以通过 [特定操作] 进行全面测试并交付 [特定价值]"]
 
-**Acceptance Scenarios**:
+**验收场景**:
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+1. **鉴于** [初始状态], **当** [操作], **则** [预期结果]
+2. **鉴于** [初始状态], **当** [操作], **则** [预期结果]
 
 ---
 
-### User Story 2 - [Brief Title] (Priority: P2)
+### 用户故事 2 - [简要标题] (优先级: P2)
 
-[Describe this user journey in plain language]
+[用通俗易懂的语言描述此用户旅程]
 
-**Why this priority**: [Explain the value and why it has this priority level]
+**为何此优先级**: [解释其价值以及为何具有此优先级]
 
-**Independent Test**: [Describe how this can be tested independently]
+**独立测试**: [描述如何独立测试此功能]
 
-**Acceptance Scenarios**:
+**验收场景**:
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-
----
-
-### User Story 3 - [Brief Title] (Priority: P3)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+1. **鉴于** [初始状态], **当** [操作], **则** [预期结果]
 
 ---
 
-[Add more user stories as needed, each with an assigned priority]
+### 用户故事 3 - [简要标题] (优先级: P3)
 
-### Edge Cases
+[用通俗易懂的语言描述此用户旅程]
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
--->
+**为何此优先级**: [解释其价值以及为何具有此优先级]
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+**独立测试**: [描述如何独立测试此功能]
 
-## Requirements *(mandatory)*
+**验收场景**:
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
--->
+1. **鉴于** [初始状态], **当** [操作], **则** [预期结果]
 
-### Functional Requirements
+---
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+[根据需要添加更多用户故事，每个故事都有一个分配的优先级]
 
-*Example of marking unclear requirements:*
-
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
-
-### Key Entities *(include if feature involves data)*
-
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
-
-## Success Criteria *(mandatory)*
+### 边缘情况
 
 <!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
+  需要采取行动: 此部分内容为占位符。
+  请填写正确的边缘情况。
 -->
 
-### Measurable Outcomes
+- 当 [边界条件] 发生时会怎样？
+- 系统如何处理 [错误场景]？
 
-- **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
-- **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
-- **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+## 需求 *(必填)*
+
+<!--
+  需要采取行动: 此部分内容为占位符。
+  请填写正确的功能需求。
+-->
+
+### 功能需求
+
+- **FR-001**: 系统必须 [具体功能, 例如, "允许用户创建账户"]
+- **FR-002**: 系统必须 [具体功能, 例如, "验证电子邮件地址"]  
+- **FR-003**: 用户必须能够 [关键交互, 例如, "reset their password"]
+- **FR-004**: 系统必须 [数据要求, 例如, "持久化用户偏好设置"]
+- **FR-005**: 系统必须 [行为, 例如, "记录所有安全事件"]
+
+*标记不明确需求的示例:*
+
+- **FR-006**: 系统必须通过 [需要澄清: 未指定身份验证方法 - 电子邮件/密码, SSO, OAuth?] 验证用户身份
+- **FR-007**: 系统必须保留用户数据 [需要澄清: 未指定保留期限]
+
+### 非功能性需求 (根据项目章程)
+
+- **NFR-001 (代码质量)**: 代码必须遵循 [链接到编码标准] 中定义的标准。
+- **NFR-002 (测试标准)**: 功能必须包含全面的单元和集成测试，代码覆盖率至少为 [例如, 80%]。
+- **NFR-003 (用户体验)**: 用户界面和交互必须遵循 [链接到设计系统] 中的指导方针。
+- **NFR-004 (性能)**: [具体性能指标, 例如, "API 响应时间必须低于 200 毫秒"]。
+
+### 关键实体 *(如果功能涉及数据则包含)*
+
+- **[实体 1]**: [它代表什么, 不含实现的关键属性]
+- **[实体 2]**: [它代表什么, 与其他实体的关系]
+
+## 成功标准 *(必填)*
+
+<!--
+  需要采取行动: 定义可衡量的成功标准。
+  这些标准必须与技术无关且可衡量。
+-->
+
+### 可衡量结果
+
+- **SC-001**: [可衡量指标, 例如, "用户可以在 2 分钟内完成账户创建"]
+- **SC-002**: [可衡量指标, 例如, "系统在不降级的情况下处理 1000 个并发用户"]
+- **SC-003**: [用户满意度指标, 例如, "90% 的用户在第一次尝试时成功完成主要任务"]
+- **SC-004**: [业务指标, 例如, "将与 [X] 相关的支持工单减少 50%"]
