@@ -43,3 +43,33 @@ export interface SchedulerConfig {
   timezone?: string;
   maxHistory?: number;
 }
+
+export interface TaskSnapshot {
+  id: string;
+  status: string;
+  lastRun: number | null;
+  nextRun: number | null;
+  executionCount: number;
+  interval: string | number;
+  tags: string[];
+  error: string | null;
+}
+
+export interface DevToolsOptions {
+  autoAttach?: boolean;
+  theme?: 'light' | 'dark' | 'auto';
+  refreshRate?: number;
+  maxHistory?: number;
+}
+
+export interface TaskControlAPI {
+  trigger(taskId: string): Promise<void>;
+  pause(taskId: string): void;
+  resume(taskId: string): void;
+  remove(taskId: string): void;
+}
+
+export interface SchedulerIntrospectionAPI {
+  getTasks(): TaskSnapshot[];
+  on(event: string, handler: (data: any) => void): () => void;
+}

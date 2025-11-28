@@ -1,5 +1,5 @@
 import { Scheduler as CoreScheduler } from './core/Scheduler';
-import { SchedulerConfig } from './types';
+import { SchedulerConfig, DevToolsOptions } from './types';
 import { NodeTimer } from './platform/node/NodeTimer';
 import { BrowserTimer } from './platform/browser/BrowserTimer';
 import { TimerStrategy } from './platform/TimerStrategy';
@@ -49,6 +49,43 @@ export class Scheduler extends CoreScheduler {
       } catch (e) {
          console.error('Failed to load DebugCLI', e);
       }
+    }
+  }
+
+  /**
+   * 启动 DevTools 并挂载到页面
+   */
+  async attachDevTools(options?: DevToolsOptions): Promise<void> {
+    if (!isBrowser) {
+      console.warn('DevTools can only be attached in browser environment');
+      return;
+    }
+    try {
+      // Dynamic import to avoid bundling UI code for Node
+      await import('./ui/components/DevTools');
+      
+      // Check if element exists
+      let el = document.querySelector('hs-devtools') as any;
+      if (!el) {
+        el = document.createElement('hs-devtools');
+        if (options?.theme) el.setAttribute('theme', options.theme);
+        document.body.appendChild(el);
+      }
+
+      // Set scheduler API adapter
+      el.setScheduler({
+        getTasks: () => this.getAllTasks(),
+        on: (_evt: string, handler: (payload: any) => void) => {
+           return this.subscribe(() => handler({}));
+        },
+        trigger: (id: string) => this.triggerTask(id),
+        pause: (id: string) => this.stopTask(id),
+        resume: (id: string) => this.startTask(id),
+        remove: (id: string) => this.deleteTask(id)
+      });
+
+    } catch (e) {
+      console.error('Failed to load DevTools', e);
     }
   }
 }

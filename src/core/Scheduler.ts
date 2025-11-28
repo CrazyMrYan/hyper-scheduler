@@ -140,6 +140,25 @@ export class Scheduler {
   getTask(id: string): Task | undefined {
     return this.registry.getTask(id);
   }
+  
+  /**
+   * 获取所有任务。
+   */
+  getAllTasks(): Task[] {
+    return this.registry.getAllTasks();
+  }
+
+  /**
+   * 手动触发任务执行（忽略状态检查）。
+   * @param id 任务 ID
+   */
+  async triggerTask(id: string): Promise<void> {
+    const task = this.getTask(id);
+    if (task) {
+      if (task.status === 'running') return;
+      await this.executeTask(task, 0, true);
+    }
+  }
 
   /**
    * 启动调度器。
@@ -194,10 +213,10 @@ export class Scheduler {
     }
   }
 
-  private async executeTask(task: Task, attempt: number = 0): Promise<void> {
+  private async executeTask(task: Task, attempt: number = 0, force: boolean = false): Promise<void> {
     this.timers.delete(task.id);
 
-    if (!this.running || task.status === 'stopped') return;
+    if (!force && (!this.running || task.status === 'stopped')) return;
 
     task.status = 'running';
     task.lastRun = Date.now();

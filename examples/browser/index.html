@@ -22,9 +22,6 @@
     <br>
     <div id="logs" class="log-box"></div>
 
-    <!-- 引入外部依赖 cron-parser (UMD) -->
-    <script src="https://unpkg.com/cron-parser@4.9.0/lib/parser.js"></script>
-    
     <!-- 引入 Hyper Scheduler (UMD) -->
     <script src="../../dist/index.umd.cjs"></script>
     
@@ -46,6 +43,9 @@
         const { Scheduler } = window.HyperScheduler;
         
         const scheduler = new Scheduler({ debug: true });
+
+        // 挂载新的 DevTools UI
+        scheduler.attachDevTools({ theme: 'auto' });
         
         // 1. Cron 任务
         scheduler.createTask({
