@@ -1,8 +1,4 @@
-import * as cronParser from 'cron-parser';
-
-// Handle potential ESM/CJS interop issues where default export might be missing
-// or nested differently depending on the environment (Node vs Browser/Vite)
-const parser = (cronParser as any).default || cronParser;
+import { validateCron, getNextRun as getCronNextRun } from './cron-lite';
 
 export type ScheduleType = 'cron' | 'interval';
 
@@ -51,7 +47,7 @@ export function parseSchedule(schedule: string): ParsedSchedule {
 
   // 2. 尝试作为 Cron 表达式解析
   try {
-    parser.parseExpression(schedule);
+    validateCron(schedule);
     // 对于 Cron，我们返回原始字符串，以便后续根据上下文（如时区）重新解析
     return {
       type: 'cron',
@@ -88,10 +84,8 @@ export function getNextRun(
   } else {
     // Cron
     const cronExpression = parsed.value as string;
-    const parseOptions = options?.timezone ? { tz: options.timezone } : {};
     try {
-      const interval = parser.parseExpression(cronExpression, parseOptions);
-      return interval.next().toDate();
+      return getCronNextRun(cronExpression, options?.timezone);
     } catch (err) {
        throw new Error(`无法计算下一次 Cron 运行时间: ${cronExpression}`);
     }

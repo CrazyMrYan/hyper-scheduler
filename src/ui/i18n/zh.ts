@@ -1,6 +1,6 @@
 export const zh = {
   header: {
-    title: 'Hyper Scheduler 调试工具',
+    title: '调试工具',
     searchPlaceholder: '搜索 ID/标签... 🔍',
     toggleDock: '切换停靠位置',
     toggleTheme: '切换主题',

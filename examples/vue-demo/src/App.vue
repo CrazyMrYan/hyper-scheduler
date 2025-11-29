@@ -78,16 +78,24 @@ const handleToggle = () => {
   </div>
 </template>
 
-<style scoped>
-body {
+<style>
+* {
   margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #f5f5f5;
+  padding: 0;
+  box-sizing: border-box;
 }
 
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  background: #f5f5f5;
+  min-height: 100vh;
+}
+</style>
+
+<style scoped>
 .app {
   max-width: 800px;
-  margin: 40px auto;
+  margin: 0 auto;
   padding: 20px;
 }
 

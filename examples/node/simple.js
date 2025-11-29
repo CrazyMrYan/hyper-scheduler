@@ -1,7 +1,7 @@
 // 注意: 在实际项目中，你应该使用 import { Scheduler } from 'hyper-scheduler';
-// 此处为了演示本地构建版本，直接引用 dist 目录下的 CommonJS 构建产物
+// 此处为了演示本地构建版本，直接引用 dist 目录下的 ESM 构建产物
 
-const { Scheduler } = require('../../dist/index.cjs');
+import { Scheduler } from '../../dist/index.js';
 
 // 创建调度器
 const scheduler = new Scheduler({ debug: true });

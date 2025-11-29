@@ -184,7 +184,7 @@ export class TaskHeader extends HTMLElement {
         .search-box {
           flex: 1;
           max-width: 300px;
-          margin: 0 16px;
+          margin: 0px 32px 0 16px;
         }
         .search-input {
           width: 100%;

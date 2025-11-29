@@ -14,6 +14,11 @@ export class Resizer extends HTMLElement {
     this._shadow = this.attachShadow({ mode: 'open' });
   }
 
+  // 检测是否为移动端
+  private isMobile(): boolean {
+    return window.innerWidth <= 480;
+  }
+
   connectedCallback() {
     this.render();
     this.addEventListeners();
@@ -27,7 +32,7 @@ export class Resizer extends HTMLElement {
     const handle = this._shadow.querySelector('.handle') as HTMLElement;
     
     const onMouseMove = (e: MouseEvent) => {
-      if (!this.panel) return;
+      if (!this.panel || this.isMobile()) return;
       
       if (this.mode === 'right') {
         const dx = this.startX - e.clientX;
@@ -36,7 +41,6 @@ export class Resizer extends HTMLElement {
         // Emit resize event for persistence
         this.dispatchEvent(new CustomEvent('resize', { detail: { width: newWidth }, bubbles: true, composed: true }));
       } else {
-        // const dy = this.startX - e.clientY; 
         const newHeight = Math.max(200, Math.min(window.innerHeight - 50, this.startHeight + (this.startY - e.clientY)));
         this.panel.style.height = `${newHeight}px`;
         this.dispatchEvent(new CustomEvent('resize', { detail: { height: newHeight }, bubbles: true, composed: true }));
@@ -51,6 +55,9 @@ export class Resizer extends HTMLElement {
     };
 
     handle.addEventListener('mousedown', (e) => {
+      // 移动端禁用拖拽
+      if (this.isMobile()) return;
+      
       this.startX = e.clientX;
       this.startY = e.clientY;
       
@@ -105,6 +112,13 @@ export class Resizer extends HTMLElement {
           position: absolute;
           top: 0;
           left: 0;
+        }
+        
+        /* 移动端隐藏拖拽手柄 */
+        @media (max-width: 480px) {
+          .handle {
+            display: none;
+          }
         }
       </style>
       <div class="handle"></div>

@@ -1,6 +1,6 @@
 export const en = {
   header: {
-    title: 'Hyper Scheduler DevTools',
+    title: 'DevTools',
     searchPlaceholder: 'Search IDs/Tags... 🔍',
     toggleDock: 'Toggle Dock Position',
     toggleTheme: 'Toggle Theme',

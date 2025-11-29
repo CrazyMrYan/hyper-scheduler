@@ -239,23 +239,26 @@ export class DevTools extends HTMLElement {
       this.$header.dockPosition = pos; 
       const size = this.store.getState().panelSize;
       const isOpen = this.store.getState().isOpen;
+      const isMobile = window.innerWidth <= 480;
       
       if (pos === 'right') {
         this.$panel.classList.add('dock-right');
         this.$panel.classList.remove('dock-bottom');
-        this.$panel.style.width = `${size.width}px`;
+        // 移动端使用 100vw，桌面端使用自定义宽度
+        const width = isMobile ? window.innerWidth : size.width;
+        this.$panel.style.width = isMobile ? '100vw' : `${width}px`;
         this.$panel.style.height = '100vh';
-        // Clear bottom, set right
         this.$panel.style.bottom = '';
-        this.$panel.style.right = isOpen ? '0' : `-${size.width}px`;
+        this.$panel.style.right = isOpen ? '0' : `-${width}px`;
       } else {
         this.$panel.classList.add('dock-bottom');
         this.$panel.classList.remove('dock-right');
         this.$panel.style.width = '100%';
-        this.$panel.style.height = `${size.height}px`;
-        // Clear right, set bottom
+        // 移动端使用固定 50vh，桌面端使用自定义高度
+        const height = isMobile ? '50vh' : `${size.height}px`;
+        this.$panel.style.height = height;
         this.$panel.style.right = '';
-        this.$panel.style.bottom = isOpen ? '0' : `-${size.height}px`;
+        this.$panel.style.bottom = isOpen ? '0' : (isMobile ? '-50vh' : `-${size.height}px`);
       }
     });
 
@@ -405,10 +408,11 @@ export class DevTools extends HTMLElement {
         
         /* Bottom Dock */
         .panel.dock-bottom {
-          bottom: -500px;
+          bottom: -50vh;
           left: 0;
           width: 100%;
-          height: 500px;
+          height: 50vh;
+          max-height: 50vh;
           border-top: 1px solid var(--hs-border);
           border-left: none;
         }
@@ -424,10 +428,23 @@ export class DevTools extends HTMLElement {
           flex: 1;
           min-height: 0;
         }
+        
+        /* Mobile - 固定尺寸，禁用拖拽 */
         @media (max-width: 480px) {
           .panel.dock-right {
-            width: 100%;
-            right: -100%;
+            width: 100vw !important;
+            right: -100vw;
+          }
+          .panel.dock-right.open {
+            right: 0;
+          }
+          .panel.dock-bottom {
+            height: 50vh !important;
+            max-height: 50vh !important;
+            bottom: -50vh;
+          }
+          .panel.dock-bottom.open {
+            bottom: 0;
           }
         }
       </style>

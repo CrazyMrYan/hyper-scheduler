@@ -18,7 +18,16 @@ export default defineConfig({
       fileName: 'index',
       formats: ['es', 'cjs', 'umd'],
     },
-    minify: 'esbuild',
+    minify: 'terser',
+    terserOptions: {
+      compress: {
+        drop_console: false,
+        drop_debugger: true,
+      },
+      format: {
+        comments: false,
+      },
+    },
     rollupOptions: {
       // 确保外部化处理那些你不想打包进库的依赖
       external: [],

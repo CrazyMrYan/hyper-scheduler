@@ -3,7 +3,7 @@ import { TaskRegistry } from './TaskRegistry';
 import { TimerStrategy } from '../platform/TimerStrategy';
 import { validateId } from '../utils/id';
 import { parseSchedule, getNextRun as getNextScheduleRun } from '../utils/schedule'; // 替换为新的 schedule 工具
-import { RetryStrategy } from './RetryStrategy';
+import { RetryStrategy } from './retry-strategy';
 
 /**
  * 核心调度器类。
