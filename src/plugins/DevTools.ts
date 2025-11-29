@@ -24,12 +24,13 @@ export class DevTools implements HyperSchedulerPlugin {
       
       // Check DOM
       let el = document.querySelector('hs-devtools') as any;
-      if (!el) {
+      const isNew = !el;
+      if (isNew) {
         el = document.createElement('hs-devtools');
-        document.body.appendChild(el);
       }
       
-      // Apply options
+      // IMPORTANT: Apply options BEFORE adding to DOM
+      // so that connectedCallback can read the attributes
       const options = this.options;
       if (options.theme) el.setAttribute('theme', options.theme);
       if (options.dockPosition) el.setAttribute('dock', options.dockPosition);
@@ -39,6 +40,11 @@ export class DevTools implements HyperSchedulerPlugin {
         if (options.trigger.backgroundColor) el.setAttribute('trigger-bg', options.trigger.backgroundColor);
         if (options.trigger.textColor) el.setAttribute('trigger-color', options.trigger.textColor);
         if (options.trigger.position) el.setAttribute('trigger-position', options.trigger.position);
+      }
+      
+      // Now add to DOM - connectedCallback will be called with attributes already set
+      if (isNew) {
+        document.body.appendChild(el);
       }
 
       // Set scheduler API adapter

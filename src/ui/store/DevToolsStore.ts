@@ -75,6 +75,15 @@ export class DevToolsStore {
     this.notify('theme', this.state.theme);
   }
 
+  /**
+   * Set language synchronously without notifying listeners.
+   * Used during initialization before child components render.
+   */
+  setLanguageSync(lang: 'en' | 'zh') {
+    setLanguage(lang);
+    this.state.language = lang;
+  }
+
   setLanguage(lang: 'en' | 'zh') {
     setLanguage(lang);
     this.state.language = lang;

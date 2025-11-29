@@ -33,16 +33,34 @@ export class DevTools extends HTMLElement {
   }
 
   connectedCallback() {
+    // IMPORTANT: Set language BEFORE rendering child components
+    // so that t() function returns correct translations during initial render
+    const languageAttr = this.getAttribute('language');
+    if (languageAttr === 'en' || languageAttr === 'zh') {
+      // Synchronously set language before any child component renders
+      this.store.setLanguageSync(languageAttr);
+    }
+    
     this.render();
     this.cacheDom();
+    this.bindStore();
     
-    // Apply initial dock position from attribute
+    // Apply initial options from attributes (after bindStore so listeners are set up)
     const dockAttr = this.getAttribute('dock');
     if (dockAttr === 'bottom') {
       this.store.setDockPosition('bottom');
     }
     
-    this.bindStore();
+    const themeAttr = this.getAttribute('theme');
+    if (themeAttr === 'light' || themeAttr === 'dark' || themeAttr === 'auto') {
+      this.store.setTheme(themeAttr);
+    }
+    
+    // Set language again through store to trigger UI updates for already rendered components
+    if (languageAttr === 'en' || languageAttr === 'zh') {
+      this.store.setLanguage(languageAttr);
+    }
+    
     this.addEventListeners();
     this.startLoop();
   }
