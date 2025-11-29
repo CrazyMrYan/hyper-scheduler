@@ -4,7 +4,11 @@ export default defineConfig({
   lang: 'zh-CN', // 设置语言为中文
   title: 'Hyper Scheduler', // 更新标题
   description: '轻量级全局任务调度 JavaScript 库。', // 更新描述
+  head: [
+    ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }]
+  ],
   themeConfig: {
+    logo: '/logo.svg',
     nav: [
       { text: '指南', link: '/guide/getting-started' }, // 更新导航文本
       { text: 'API 参考', link: '/api/scheduler' },     // 更新导航文本
