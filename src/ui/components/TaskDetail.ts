@@ -42,7 +42,7 @@ export class TaskDetail extends HTMLElement {
     const t = this._task;
     const config = {
       id: t.id,
-      interval: t.interval,
+      schedule: t.schedule,
       tags: t.tags,
       // other props
     };

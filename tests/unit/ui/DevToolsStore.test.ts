@@ -35,7 +35,7 @@ describe('DevToolsStore', () => {
       lastRun: null,
       nextRun: null,
       executionCount: 0,
-      interval: '1s',
+      schedule: '1s',
       tags: [],
       error: null
     };

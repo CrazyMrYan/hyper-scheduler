@@ -1,9 +1,12 @@
 import { themeStyles } from '../styles/theme.css';
 import { TaskSnapshot } from '../../types';
+import { ICONS } from './icons';
+import { t } from '../i18n';
 
 export class TaskList extends HTMLElement {
   private _shadow: ShadowRoot;
   private _tasks: TaskSnapshot[] = [];
+  private _lastExecutionTimes: Map<string, number> = new Map();
 
   constructor() {
     super();
@@ -15,40 +18,76 @@ export class TaskList extends HTMLElement {
   }
 
   set tasks(map: Map<string, TaskSnapshot>) {
-    this._tasks = Array.from(map.values());
+    const newTasks = Array.from(map.values());
+    
+    // Track execution count changes to show flash animation
+    newTasks.forEach(task => {
+      const oldTask = this._tasks.find(t => t.id === task.id);
+      if (oldTask && task.executionCount > oldTask.executionCount) {
+        this._lastExecutionTimes.set(task.id, Date.now());
+      }
+    });
+    
+    this._tasks = newTasks;
     this.renderRows();
   }
 
-  private formatTimeAgo(timestamp: number | null): string {
-    if (!timestamp) return '-';
-    const diff = Date.now() - timestamp;
-    if (diff < 1000) return `${diff}ms ago`;
-    if (diff < 60000) return `${Math.floor(diff / 1000)}s ago`;
-    if (diff < 3600000) return `${Math.floor(diff / 60000)}m ago`;
-    return new Date(timestamp).toLocaleTimeString();
+  filter(text: string, map: Map<string, TaskSnapshot>) {
+    const all = Array.from(map.values());
+    if (!text) {
+      this._tasks = all;
+    } else {
+      const lower = text.toLowerCase();
+      this._tasks = all.filter(t => 
+        t.id.toLowerCase().includes(lower) || 
+        t.tags.some(tag => tag.toLowerCase().includes(lower))
+      );
+    }
+    this.renderRows();
   }
 
-  private getStatusIcon(status: string) {
+  private getStatusIcon(status: string, taskId: string) {
+    const lastExec = this._lastExecutionTimes.get(taskId);
+    const isRecentlyExecuted = lastExec && (Date.now() - lastExec < 1000);
+    
     switch (status) {
-      case 'running': return `<span style="color:var(--hs-success)">🟢</span> Run`;
-      case 'paused': return `<span style="color:var(--hs-warning)">🟡</span> Paus`;
-      case 'stopped': return `<span style="color:var(--hs-danger)">🔴</span> Stop`;
-      case 'idle': return `<span style="color:var(--hs-text-secondary)">⚪</span> idle`;
-      case 'error': return `<span style="color:var(--hs-danger)">🔴</span> Error`;
-      default: return status;
+      case 'running': 
+        return `<span style="color:var(--hs-success)">🟢</span> ${t('status.running')}`;
+      case 'paused': 
+        return `<span style="color:var(--hs-warning)">🟡</span> ${t('status.paused')}`;
+      case 'stopped': 
+        return `<span style="color:var(--hs-danger)">🔴</span> ${t('status.stopped')}`;
+      case 'idle': 
+        if (isRecentlyExecuted) {
+          return `<span class="status-flash" style="color:var(--hs-success)">🟢</span> ${t('status.idle')}`;
+        }
+        return `<span style="color:var(--hs-text-secondary)">⚪</span> ${t('status.idle')}`;
+      case 'error': 
+        return `<span style="color:var(--hs-danger)">🔴</span> ${t('status.error')}`;
+      default: 
+        return status;
     }
   }
 
-  private formatInterval(interval: string | number): string {
-    if (typeof interval === 'number') {
-      return `${interval}ms`;
+  private formatSchedule(schedule: string | number): string {
+    if (typeof schedule === 'number') {
+      return `${schedule}ms`;
     }
-    // Check if it's a cron expression (contains spaces and asterisks)
-    if (interval.includes('*') || interval.includes(' ')) {
-      // Truncate long cron expressions
-      return interval.length > 15 ? interval.substring(0, 12) + '...' : interval;
+    if (schedule && (schedule.includes('*') || schedule.includes(' '))) {
+      return schedule.length > 15 ? schedule.substring(0, 12) + '...' : schedule;
     }
-    return interval;
+    return schedule || '-';
+  }
+
+  private formatTime(timestamp: number | null): string {
+    if (!timestamp) return '-';
+    const date = new Date(timestamp);
+    return date.toLocaleTimeString('en-US', { 
+      hour12: false,
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit'
+    }) + '.' + date.getMilliseconds().toString().padStart(3, '0');
   }
 
   private renderRows() {
@@ -56,33 +95,42 @@ export class TaskList extends HTMLElement {
     if (!tbody) return;
 
     // Simple full re-render for MVP
-    tbody.innerHTML = this._tasks.map((task, index) => `
-      <tr data-id="${task.id}">
+    tbody.innerHTML = this._tasks.map((task, index) => {
+      const lastExec = this._lastExecutionTimes.get(task.id);
+      const isRecentlyExecuted = lastExec && (Date.now() - lastExec < 1000);
+      const rowClass = isRecentlyExecuted ? 'recently-executed' : '';
+      
+      return `
+      <tr data-id="${task.id}" class="${rowClass}">
         <td class="col-num">${index + 1}</td>
         <td class="col-id">
           <div class="task-id">${task.id}</div>
           <div class="tags">
             ${task.tags && task.tags.length > 0 
               ? task.tags.map(t => `<span class="tag">${t}</span>`).join('') 
-              : '<span class="no-tags">(No Tags)</span>'}
+              : `<span class="no-tags">${t('list.noTags')}</span>`}
           </div>
         </td>
-        <td>${this.getStatusIcon(task.status)}</td>
-        <td>${this.formatInterval(task.interval)}</td>
+        <td>${this.getStatusIcon(task.status, task.id)}</td>
+        <td>${this.formatSchedule(task.schedule)}</td>
         <td>${task.executionCount || 0}</td>
-        <td>${this.formatTimeAgo(task.lastRun)}</td>
+        <td>${this.formatTime(task.lastRun)}</td>
         <td class="col-actions">
           <div class="action-group">
-            <button class="btn-icon btn-trigger" data-action="trigger" title="▶️ Trigger">▶️</button>
-            ${task.status === 'paused' || task.status === 'stopped'
-              ? `<button class="btn-icon btn-resume" data-action="resume" title="▶️ Resume">▶️</button>`
-              : `<button class="btn-icon btn-pause" data-action="pause" title="⏸️ Pause">⏸️</button>`
+            <button class="btn-icon" data-action="trigger" title="Trigger now">${ICONS.trigger}</button>
+            ${task.status === 'running' 
+              ? `<button class="btn-icon" data-action="pause" title="Pause">${ICONS.pause}</button>`
+              : (task.status === 'paused' || task.status === 'stopped'
+                  ? `<button class="btn-icon" data-action="resume" title="Resume">${ICONS.resume}</button>`
+                  : `<button class="btn-icon" data-action="pause" title="Pause" disabled style="opacity:0.5">${ICONS.pause}</button>`
+                )
             }
-            <button class="btn-icon btn-remove danger" data-action="remove" title="🗑️ Remove">🗑️</button>
+            <button class="btn-icon danger" data-action="remove" title="Remove">${ICONS.remove}</button>
           </div>
         </td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 
   render() {
@@ -122,6 +170,20 @@ export class TaskList extends HTMLElement {
         tr:hover {
           background: var(--hs-bg-secondary);
           cursor: pointer;
+        }
+        tr.recently-executed {
+          animation: flash-row 1s ease-out;
+        }
+        @keyframes flash-row {
+          0% { background: rgba(34, 197, 94, 0.2); }
+          100% { background: transparent; }
+        }
+        .status-flash {
+          animation: flash-icon 1s ease-out;
+        }
+        @keyframes flash-icon {
+          0%, 50% { opacity: 1; }
+          25%, 75% { opacity: 0.3; }
         }
         .tip {
           padding: 12px;
@@ -165,19 +227,23 @@ export class TaskList extends HTMLElement {
           gap: 4px;
         }
         .btn-icon {
-          background: var(--hs-bg-secondary);
+          background: transparent;
           border: 1px solid var(--hs-border);
-          color: var(--hs-text);
+          color: var(--hs-text-secondary);
           border-radius: 4px;
-          min-width: 28px;
+          width: 24px;
           height: 24px;
           display: flex;
           align-items: center;
           justify-content: center;
           cursor: pointer;
-          padding: 0 6px;
-          font-size: 11px;
-          white-space: nowrap;
+          padding: 0;
+          flex-shrink: 0;
+        }
+        .btn-icon svg {
+          width: 14px;
+          height: 14px;
+          display: block;
         }
         .btn-icon:hover {
           background: var(--hs-primary);
@@ -206,12 +272,12 @@ export class TaskList extends HTMLElement {
         <thead>
           <tr>
             <th>#</th>
-            <th>ID / Tags</th>
-            <th>Status</th>
-            <th>Interval</th>
-            <th>Count</th>
-            <th>Last Run</th>
-            <th>Actions</th>
+            <th>${t('list.idTags')}</th>
+            <th>${t('list.status')}</th>
+            <th>${t('list.schedule')}</th>
+            <th>${t('list.count')}</th>
+            <th>${t('list.lastRun')}</th>
+            <th>${t('list.actions')}</th>
           </tr>
         </thead>
         <tbody>
@@ -219,7 +285,7 @@ export class TaskList extends HTMLElement {
         </tbody>
       </table>
       <div class="tip">
-        ✨ Tip: Click a row for details & history.
+        ${t('list.tip')}
       </div>
     `;
     

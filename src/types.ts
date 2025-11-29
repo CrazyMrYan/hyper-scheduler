@@ -36,6 +36,7 @@ export interface Task extends TaskDefinition {
   nextRun?: number;
   history: ExecutionRecord[];
   tags?: string[];
+  executionCount?: number;
 }
 
 export interface SchedulerConfig {
@@ -50,7 +51,7 @@ export interface TaskSnapshot {
   lastRun: number | null;
   nextRun: number | null;
   executionCount: number;
-  interval: string | number;
+  schedule: string;
   tags: string[];
   error: string | null;
 }
@@ -58,6 +59,7 @@ export interface TaskSnapshot {
 export interface DevToolsOptions {
   autoAttach?: boolean;
   theme?: 'light' | 'dark' | 'auto';
+  dockPosition?: 'right' | 'bottom';
   refreshRate?: number;
   maxHistory?: number;
 }

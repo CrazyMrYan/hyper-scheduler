@@ -1,8 +1,11 @@
 export const themeStyles = `
   :host {
     --hs-font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --hs-font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
     --hs-font-size: 12px;
     --hs-line-height: 1.5;
+    --hs-panel-width: 400px;
+    --hs-panel-height: 300px;
     
     /* Light Theme (Default) */
     --hs-bg: #ffffff;
@@ -21,6 +24,13 @@ export const themeStyles = `
     --hs-radius: 6px;
     --hs-header-height: 40px;
     --hs-z-index: 9999;
+
+    /* Default display styles for the host itself */
+    background: var(--hs-bg);
+    color: var(--hs-text);
+    font-family: var(--hs-font-family);
+    font-size: var(--hs-font-size);
+    line-height: var(--hs-line-height);
   }
 
   :host([theme="dark"]) {
@@ -37,5 +47,10 @@ export const themeStyles = `
     --hs-warning: #fbbf24;
     
     --hs-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+  }
+
+  :host {
+    background: var(--hs-bg);
+    color: var(--hs-text);
   }
 `;

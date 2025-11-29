@@ -1,9 +1,13 @@
 import { TaskSnapshot, TaskControlAPI } from '../../types';
+import { setLanguage } from '../i18n';
 
 export interface DevToolsState {
   isOpen: boolean;
   activeTab: 'tasks' | 'timeline';
   theme: 'light' | 'dark' | 'auto';
+  dockPosition: 'right' | 'bottom';
+  panelSize: { width: number; height: number };
+  language: 'en' | 'zh';
   filterText: string;
   selectedTaskId: string | null;
   tasks: Map<string, TaskSnapshot>;
@@ -23,6 +27,9 @@ export class DevToolsStore {
       isOpen: false,
       activeTab: 'tasks',
       theme: 'auto',
+      dockPosition: 'right',
+      panelSize: { width: 500, height: 500 },
+      language: 'en',
       filterText: '',
       selectedTaskId: null,
       tasks: new Map(),
@@ -68,9 +75,35 @@ export class DevToolsStore {
     this.notify('theme', this.state.theme);
   }
 
+  setLanguage(lang: 'en' | 'zh') {
+    setLanguage(lang);
+    this.state.language = lang;
+    this.notify('language', this.state.language);
+  }
+
+  setPanelSize(size: { width?: number; height?: number }) {
+    this.state.panelSize = { ...this.state.panelSize, ...size };
+    // Persist to localStorage?
+    try {
+      localStorage.setItem('hs-panel-size', JSON.stringify(this.state.panelSize));
+    } catch (e) { /* ignore */ }
+    
+    this.notify('panelSize', this.state.panelSize);
+  }
+
   setTab(tab: 'tasks' | 'timeline') {
     this.state.activeTab = tab;
     this.notify('activeTab', this.state.activeTab);
+  }
+
+  setDockPosition(pos: 'right' | 'bottom') {
+    this.state.dockPosition = pos;
+    this.notify('dockPosition', this.state.dockPosition);
+  }
+
+  setFilterText(text: string) {
+    this.state.filterText = text;
+    this.notify('filterText', this.state.filterText);
   }
 
   updateTask(task: TaskSnapshot) {
@@ -115,12 +148,14 @@ export class DevToolsStore {
   }
 
   pauseTask(id: string) {
+    console.log('[DevToolsStore] pauseTask called:', id);
     if (this.scheduler) {
       this.scheduler.pause(id);
     }
   }
 
   resumeTask(id: string) {
+    console.log('[DevToolsStore] resumeTask called:', id);
     if (this.scheduler) {
       this.scheduler.resume(id);
     }

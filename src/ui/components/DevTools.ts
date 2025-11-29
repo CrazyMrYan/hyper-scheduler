@@ -6,6 +6,7 @@ import './TaskHeader';
 import './TaskList';
 import './TaskDetail';
 import './Timeline';
+import './Resizer';
 import { TaskHeader } from './TaskHeader';
 import { TaskList } from './TaskList';
 import { TaskDetail } from './TaskDetail';
@@ -34,6 +35,13 @@ export class DevTools extends HTMLElement {
   connectedCallback() {
     this.render();
     this.cacheDom();
+    
+    // Apply initial dock position from attribute
+    const dockAttr = this.getAttribute('dock');
+    if (dockAttr === 'bottom') {
+      this.store.setDockPosition('bottom');
+    }
+    
     this.bindStore();
     this.addEventListeners();
     this.startLoop();
@@ -47,18 +55,63 @@ export class DevTools extends HTMLElement {
     this.scheduler = api;
     this.store.setScheduler(api);
     
-    // Initial load
+    // Initial load - fetch immediately
     const tasks = this.scheduler.getTasks();
     tasks.forEach(t => this.store.updateTask(t));
 
-    // Subscribe to events
-    const events = ['task_registered', 'task_updated', 'task_started', 'task_completed', 'task_failed', 'task_removed'];
-    events.forEach(evt => {
-      this.scheduler?.on(evt, (_payload: any) => {
-        const allTasks = this.scheduler?.getTasks() || [];
-        allTasks.forEach(t => this.store.updateTask(t));
-      });
+    // Subscribe to ALL events and refresh task list
+    const refreshTasks = () => {
+      const allTasks = this.scheduler?.getTasks() || [];
+      allTasks.forEach(t => this.store.updateTask(t));
+    };
+
+    this.scheduler.on('task_registered', refreshTasks);
+    this.scheduler.on('task_updated', (payload: any) => {
+      console.log('[DevTools] task_updated event:', payload);
+      refreshTasks();
     });
+    this.scheduler.on('task_started', refreshTasks);
+    this.scheduler.on('task_removed', refreshTasks);
+    this.scheduler.on('task_stopped', (payload: any) => {
+      console.log('[DevTools] task_stopped event:', payload);
+      refreshTasks();
+    });
+
+    this.scheduler.on('task_completed', (payload: any) => {
+      refreshTasks();
+      
+      // Add to history
+      if (payload && payload.taskId) {
+        this.store.addHistory(payload.taskId, {
+          timestamp: payload.task?.lastRun || Date.now(),
+          duration: payload.duration || 0,
+          success: true,
+          error: null
+        });
+      }
+    });
+
+    this.scheduler.on('task_failed', (payload: any) => {
+      refreshTasks();
+      
+      // Add to history
+      if (payload && payload.taskId) {
+        this.store.addHistory(payload.taskId, {
+          timestamp: payload.task?.lastRun || Date.now(),
+          duration: payload.duration || 0,
+          success: false,
+          error: payload.error || 'Unknown error'
+        });
+      }
+    });
+
+    // Add polling for real-time updates (fallback for missed events)
+    // Poll every 500ms when DevTools is open
+    setInterval(() => {
+      if (this.store.getState().isOpen) {
+        refreshTasks();
+      }
+    }, 500);
   }
 
   private cacheDom() {
@@ -71,23 +124,50 @@ export class DevTools extends HTMLElement {
   }
 
   private bindStore() {
+    // Restore size
+    try {
+      const saved = localStorage.getItem('hs-panel-size');
+      if (saved) {
+        this.store.setPanelSize(JSON.parse(saved));
+      }
+    } catch (e) { /* ignore */ }
+
     // Bind Store -> UI
     this.store.subscribe('isOpen', (isOpen) => {
+      const pos = this.store.getState().dockPosition;
+      const size = this.store.getState().panelSize;
+      
       if (isOpen) {
         this.$panel.classList.add('open');
         this.$trigger.style.display = 'none';
+        // Ensure panel is visible
+        if (pos === 'right') {
+          this.$panel.style.right = '0';
+        } else {
+          this.$panel.style.bottom = '0';
+        }
       } else {
         this.$panel.classList.remove('open');
         this.$trigger.style.display = 'block';
+        // Ensure panel is hidden
+        if (pos === 'right') {
+          this.$panel.style.right = `-${size.width}px`;
+        } else {
+          this.$panel.style.bottom = `-${size.height}px`;
+        }
       }
     });
 
     this.store.subscribe('theme', (theme) => {
-      if (theme === 'auto') {
-        this.setAttribute('theme', 'light'); 
-      } else {
-        this.setAttribute('theme', theme);
-      }
+      const actualTheme = theme === 'auto' ? 'light' : theme;
+      this.setAttribute('theme', actualTheme);
+      
+      // Propagate theme to all child components
+      this.$header.setAttribute('theme', actualTheme);
+      this.$taskList.setAttribute('theme', actualTheme);
+      this.$taskDetail.setAttribute('theme', actualTheme);
+      this.$timeline.setAttribute('theme', actualTheme);
+      
       this.$header.theme = theme;
     });
 
@@ -136,8 +216,11 @@ export class DevTools extends HTMLElement {
 
     this.store.subscribe('activeTab', (tab) => {
       this.$header.activeTab = tab;
+      // Switch view logic later (Phase 5)
       if (tab === 'tasks') {
+        this.$taskList.style.display = 'block';
         this.$timeline.style.display = 'none';
+        // If selected, list is hidden? 
         if (this.store.getState().selectedTaskId) {
             this.$taskList.style.display = 'none';
             this.$taskDetail.style.display = 'block';
@@ -151,6 +234,46 @@ export class DevTools extends HTMLElement {
         this.$timeline.style.display = 'block';
       }
     });
+
+    this.store.subscribe('dockPosition', (pos) => {
+      this.$header.dockPosition = pos; 
+      const size = this.store.getState().panelSize;
+      if (pos === 'right') {
+        this.$panel.classList.add('dock-right');
+        this.$panel.classList.remove('dock-bottom');
+        this.$panel.style.width = `${size.width}px`;
+        this.$panel.style.height = '100vh';
+      } else {
+        this.$panel.classList.add('dock-bottom');
+        this.$panel.classList.remove('dock-right');
+        this.$panel.style.width = '100%';
+        this.$panel.style.height = `${size.height}px`;
+      }
+    });
+
+    this.store.subscribe('panelSize', (size) => {
+      const pos = this.store.getState().dockPosition;
+      if (pos === 'right' && size.width) {
+        this.$panel.style.width = `${size.width}px`;
+        // Reset right position to ensure close animation works
+        this.$panel.style.right = this.store.getState().isOpen ? '0' : `-${size.width}px`;
+      } else if (pos === 'bottom' && size.height) {
+        this.$panel.style.height = `${size.height}px`;
+        // Reset bottom position to ensure close animation works
+        this.$panel.style.bottom = this.store.getState().isOpen ? '0' : `-${size.height}px`;
+      }
+    });
+
+    this.store.subscribe('language', (lang) => {
+      this.$header.language = lang;
+      // Force re-render list to update localized status
+      this.$taskList.tasks = this.store.getState().tasks;
+    });
+
+    this.store.subscribe('filterText', (text) => {
+      const tasks = this.store.getState().tasks;
+      this.$taskList.filter(text, tasks);
+    });
   }
 
   private addEventListeners() {
@@ -158,8 +281,14 @@ export class DevTools extends HTMLElement {
       this.store.toggle();
     });
 
-    this.$header.addEventListener('close', () => {
+    this.$header.addEventListener('close', (e) => {
+      e.stopPropagation();
       this.store.toggle();
+    });
+
+    this.$header.addEventListener('dock-toggle', () => {
+      const current = this.store.getState().dockPosition;
+      this.store.setDockPosition(current === 'right' ? 'bottom' : 'right');
     });
 
     this.$header.addEventListener('theme-toggle', (e: Event) => {
@@ -167,9 +296,25 @@ export class DevTools extends HTMLElement {
       this.store.setTheme(theme);
     });
 
+    this.$header.addEventListener('lang-toggle', (e: Event) => {
+      const lang = (e as CustomEvent).detail;
+      this.store.setLanguage(lang);
+    });
+
     this.$header.addEventListener('tab-change', (e: Event) => {
       const tab = (e as CustomEvent).detail;
       this.store.setTab(tab);
+    });
+
+    this.$header.addEventListener('search', (e: Event) => {
+      const text = (e as CustomEvent).detail;
+      this.store.setFilterText(text);
+    });
+
+    // Listen to resize events from hs-resizer
+    this.addEventListener('resize', (e: Event) => {
+      const size = (e as CustomEvent).detail;
+      this.store.setPanelSize(size);
     });
 
     this.$taskList.addEventListener('task-select', (e: Event) => {
@@ -221,28 +366,41 @@ export class DevTools extends HTMLElement {
         }
         .panel {
           position: fixed;
-          top: 0;
-          right: -600px; /* Hidden */
-          width: 600px;
-          height: 100vh;
           background: var(--hs-bg);
           box-shadow: var(--hs-shadow);
           z-index: var(--hs-z-index);
-          transition: right 0.3s ease;
+          transition: all 0.3s ease;
           display: flex;
           flex-direction: column;
           border-left: 1px solid var(--hs-border);
         }
-        .panel.open {
-          right: 0;
+        /* Default Right Dock */
+        .panel.dock-right {
+          top: 0;
+          right: -500px;
+          width: 500px;
+          height: 100vh;
+          border-left: 1px solid var(--hs-border);
+          border-top: none;
         }
+        
+        /* Bottom Dock */
+        .panel.dock-bottom {
+          bottom: -500px;
+          left: 0;
+          width: 100%;
+          height: 500px;
+          border-top: 1px solid var(--hs-border);
+          border-left: none;
+        }
+
         .content {
           flex: 1;
           overflow: hidden;
           position: relative;
         }
         @media (max-width: 480px) {
-          .panel {
+          .panel.dock-right {
             width: 100%;
             right: -100%;
           }
@@ -251,7 +409,8 @@ export class DevTools extends HTMLElement {
       
       <hs-floating-trigger></hs-floating-trigger>
       
-      <div class="panel">
+      <div class="panel dock-right">
+        <hs-resizer></hs-resizer>
         <hs-task-header></hs-task-header>
         <div class="content">
           <hs-task-list></hs-task-list>

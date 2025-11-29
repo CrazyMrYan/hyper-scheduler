@@ -16,6 +16,7 @@ export class Scheduler {
   private running: boolean;
   private timers: Map<string, any>; // Task ID -> Timer Handle
   private listeners: ((tasks: Task[]) => void)[];
+  private eventListeners: Map<string, Set<(payload: any) => void>>;
 
   /**
    * 创建一个新的调度器实例。
@@ -33,6 +34,7 @@ export class Scheduler {
     this.running = false;
     this.timers = new Map();
     this.listeners = [];
+    this.eventListeners = new Map();
   }
 
   /**
@@ -46,6 +48,30 @@ export class Scheduler {
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
+  }
+
+  /**
+   * 订阅特定事件
+   * @param event 事件名称
+   * @param handler 事件处理函数
+   * @returns 取消订阅的函数
+   */
+  on(event: string, handler: (payload: any) => void): () => void {
+    if (!this.eventListeners.has(event)) {
+      this.eventListeners.set(event, new Set());
+    }
+    this.eventListeners.get(event)!.add(handler);
+    
+    return () => {
+      this.eventListeners.get(event)?.delete(handler);
+    };
+  }
+
+  private emit(event: string, payload: any): void {
+    const handlers = this.eventListeners.get(event);
+    if (handlers) {
+      handlers.forEach(handler => handler(payload));
+    }
   }
 
   private notify(): void {
@@ -68,10 +94,12 @@ export class Scheduler {
       tags: definition.tags || [],
       status: 'idle',
       history: [],
+      executionCount: 0,
     };
 
     this.registry.addTask(task);
     this.log(`Task created: ${task.id}`);
+    this.emit('task_registered', { taskId: task.id, task });
     this.notify();
 
     if (this.running) {
@@ -89,6 +117,7 @@ export class Scheduler {
     const deleted = this.registry.deleteTask(id);
     if (deleted) {
       this.log(`Task deleted: ${id}`);
+      this.emit('task_removed', { taskId: id });
       this.notify();
     }
     return deleted;
@@ -110,6 +139,7 @@ export class Scheduler {
 
     task.status = 'idle'; // Reset status if it was stopped or error
     this.log(`Starting task: ${id}`);
+    this.emit('task_updated', { taskId: id, task });
     this.notify();
     this.scheduleTask(task);
   }
@@ -129,6 +159,7 @@ export class Scheduler {
     if (task) {
       task.status = 'stopped';
       this.log(`Task stopped: ${id}`);
+      this.emit('task_stopped', { taskId: id, task });
       this.notify();
     }
   }
@@ -220,9 +251,11 @@ export class Scheduler {
 
     task.status = 'running';
     task.lastRun = Date.now();
+    task.executionCount = (task.executionCount || 0) + 1;
     const startTime = Date.now();
 
     this.log(`Executing task: ${task.id} (Attempt ${attempt})`);
+    this.emit('task_started', { taskId: task.id, task });
     this.notify();
 
     try {
@@ -237,6 +270,7 @@ export class Scheduler {
       
       task.status = 'idle';
       this.log(`Task execution success: ${task.id}`);
+      this.emit('task_completed', { taskId: task.id, task, duration });
       this.notify();
       
       // Schedule next run
@@ -252,6 +286,7 @@ export class Scheduler {
       });
 
       this.log(`Task execution failed: ${task.id} - ${err.message}`);
+      this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
       
       // Retry logic
       const retryDelay = RetryStrategy.getDelay(attempt, task.options?.retry);

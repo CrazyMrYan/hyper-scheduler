@@ -1,5 +1,6 @@
 import { themeStyles } from '../styles/theme.css';
 import { ICONS } from './icons';
+import { t } from '../i18n';
 
 export class TaskHeader extends HTMLElement {
   private _shadow: ShadowRoot;
@@ -7,11 +8,16 @@ export class TaskHeader extends HTMLElement {
   private _stats: { active: number; total: number } = { active: 0, total: 0 };
   private _theme: 'light' | 'dark' | 'auto' = 'auto';
   private _activeTab: 'tasks' | 'timeline' = 'tasks';
+  private _language: 'en' | 'zh' = 'en';
 
   private $fps!: HTMLElement;
   private $stats!: HTMLElement;
   private $themeIcon!: HTMLElement;
+  private $dockIcon!: HTMLElement;
   private $tabs!: NodeListOf<HTMLElement>;
+  private $searchInput!: HTMLInputElement;
+  private $title!: HTMLElement;
+  private $langBtn!: HTMLElement;
 
   constructor() {
     super();
@@ -29,20 +35,33 @@ export class TaskHeader extends HTMLElement {
     this._fps = Math.round(val);
     if (this.$fps) {
       const color = this._fps < 30 ? 'var(--hs-danger)' : (this._fps < 50 ? 'var(--hs-warning)' : 'var(--hs-success)');
-      this.$fps.innerHTML = `⚡ FPS: <span style="color:${color}">${this._fps}</span> (Main Thread)`;
+      this.$fps.innerHTML = `⚡ ${t('stats.fps')}: <span style="color:${color}">${this._fps}</span> (${t('stats.mainThread')})`;
     }
   }
 
   set stats(val: { active: number; total: number }) {
     this._stats = val;
     if (this.$stats) {
-      this.$stats.innerHTML = `📊 Status: <span style="color:var(--hs-success)">🟢 Active: ${val.active}</span> <span style="margin-left:12px;color:var(--hs-text-secondary)">⚪ Total: ${val.total}</span>`;
+      this.$stats.innerHTML = `📊 ${t('stats.status')}: <span style="color:var(--hs-success)">🟢 ${t('stats.active')}: ${val.active}</span> <span style="margin-left:12px;color:var(--hs-text-secondary)">⚪ ${t('stats.total')}: ${val.total}</span>`;
     }
   }
 
   set theme(val: 'light' | 'dark' | 'auto') {
     this._theme = val;
+    this.setAttribute('theme', val);
     this.updateThemeIcon();
+  }
+
+  set language(val: 'en' | 'zh') {
+    this._language = val;
+    this.updateTexts();
+  }
+
+  set dockPosition(val: 'right' | 'bottom') {
+    if (this.$dockIcon) {
+      this.$dockIcon.innerHTML = val === 'right' ? ICONS.dockBottom : ICONS.dock;
+      this.$dockIcon.parentElement?.setAttribute('title', t('header.toggleDock'));
+    }
   }
 
   set activeTab(val: 'tasks' | 'timeline') {
@@ -54,13 +73,26 @@ export class TaskHeader extends HTMLElement {
     this.$fps = this._shadow.querySelector('.fps')!;
     this.$stats = this._shadow.querySelector('.stats')!;
     this.$themeIcon = this._shadow.querySelector('.theme-btn span')!;
+    this.$dockIcon = this._shadow.querySelector('.dock-btn')!;
     this.$tabs = this._shadow.querySelectorAll('.tab');
+    this.$searchInput = this._shadow.querySelector('.search-input')!;
+    this.$title = this._shadow.querySelector('.title')!;
+    this.$langBtn = this._shadow.querySelector('.lang-btn')!;
   }
 
   private addEventListeners() {
+    this._shadow.querySelector('.dock-btn')?.addEventListener('click', () => {
+      this.dispatchEvent(new CustomEvent('dock-toggle'));
+    });
+
     this._shadow.querySelector('.theme-btn')?.addEventListener('click', () => {
-      const newTheme = this._theme === 'dark' ? 'light' : 'dark'; // Simple toggle for now
+      const newTheme = this._theme === 'dark' ? 'light' : 'dark'; 
       this.dispatchEvent(new CustomEvent('theme-toggle', { detail: newTheme }));
+    });
+
+    this._shadow.querySelector('.lang-btn')?.addEventListener('click', () => {
+      const newLang = this._language === 'en' ? 'zh' : 'en';
+      this.dispatchEvent(new CustomEvent('lang-toggle', { detail: newLang }));
     });
 
     this._shadow.querySelector('.close-btn')?.addEventListener('click', () => {
@@ -72,6 +104,11 @@ export class TaskHeader extends HTMLElement {
         const target = (e.currentTarget as HTMLElement).dataset.tab;
         this.dispatchEvent(new CustomEvent('tab-change', { detail: target }));
       });
+    });
+
+    this.$searchInput?.addEventListener('input', (e) => {
+      const val = (e.target as HTMLInputElement).value;
+      this.dispatchEvent(new CustomEvent('search', { detail: val }));
     });
   }
 
@@ -91,11 +128,26 @@ export class TaskHeader extends HTMLElement {
     });
   }
 
-  private updateView() {
-    this.fps = this._fps;
+  private updateTexts() {
+    if (this.$title) this.$title.innerHTML = `🕒 ${t('header.title')}`;
+    if (this.$searchInput) this.$searchInput.placeholder = t('header.searchPlaceholder');
+    if (this.$langBtn) this.$langBtn.textContent = this._language === 'en' ? 'EN' : '中';
+    
+    this.$tabs.forEach(tab => {
+      const key = tab.dataset.tab;
+      if (key === 'tasks') tab.innerHTML = `📌 ${t('tabs.tasks')}`;
+      if (key === 'timeline') tab.innerHTML = `📈 ${t('tabs.timeline')}`;
+    });
+
+    // Force update stats and fps to refresh labels
     this.stats = this._stats;
+    this.fps = this._fps;
+  }
+
+  private updateView() {
     this.updateThemeIcon();
     this.updateTabs();
+    this.updateTexts();
   }
 
   render() {
@@ -107,7 +159,7 @@ export class TaskHeader extends HTMLElement {
           background: var(--hs-bg);
           border-bottom: 1px solid var(--hs-border);
           padding: 0 16px;
-          height: var(--hs-header-height); /* Should be taller for header + stats + tabs? Spec says 3 rows */
+          height: var(--hs-header-height);
           height: auto; 
         }
         .top-bar {
@@ -155,10 +207,20 @@ export class TaskHeader extends HTMLElement {
           border-radius: 4px;
           display: flex;
           align-items: center;
+          font-size: 12px;
         }
         button:hover {
           background: var(--hs-bg-secondary);
           color: var(--hs-text);
+        }
+        button svg {
+          width: 16px;
+          height: 16px;
+        }
+        .lang-btn {
+          font-weight: 600;
+          width: 24px;
+          justify-content: center;
         }
         .stats-bar {
           display: flex;
@@ -198,26 +260,26 @@ export class TaskHeader extends HTMLElement {
       </style>
       
       <div class="top-bar">
-        <div class="title">
-          🕒 Hyper Scheduler DevTools
-        </div>
+        <div class="title"></div>
         <div class="search-box">
-          <input type="text" class="search-input" placeholder="Search IDs/Tags... 🔍">
+          <input type="text" class="search-input">
         </div>
         <div class="controls">
+          <button class="lang-btn" title="Switch Language">EN</button>
+          <button class="dock-btn" title="Toggle Dock">${ICONS.dock}</button>
           <button class="theme-btn" title="Toggle Theme"><span>${ICONS.sun}</span></button>
-          <button class="close-btn" title="✕ Close">✕</button>
+          <button class="close-btn" title="Close">${ICONS.close}</button>
         </div>
       </div>
       
       <div class="stats-bar">
-        <div class="stats">Loading...</div>
-        <div class="fps">0 FPS</div>
+        <div class="stats"></div>
+        <div class="fps"></div>
       </div>
       
       <div class="tabs-bar">
-        <div class="tab active" data-tab="tasks">📌 Tasks List</div>
-        <div class="tab" data-tab="timeline">📈 Timeline</div>
+        <div class="tab active" data-tab="tasks"></div>
+        <div class="tab" data-tab="timeline"></div>
       </div>
     `;
   }

@@ -25,31 +25,6 @@ export class Scheduler extends CoreScheduler {
    */
   constructor(config?: SchedulerConfig) {
     super(getDefaultTimerStrategy(), config);
-
-    if (config?.debug) {
-      this.initDebug();
-    }
-  }
-
-  private async initDebug() {
-    if (isBrowser) {
-      // Dynamic import to avoid bundling UI code for Node
-      try {
-        const { DebugPanel } = await import('./ui/DebugPanel');
-        const panel = new DebugPanel();
-        panel.show();
-        this.subscribe((tasks) => panel.update(tasks));
-      } catch (e) {
-        console.error('Failed to load DebugPanel', e);
-      }
-    } else {
-      try {
-        const { DebugCLI } = await import('./platform/node/DebugCLI');
-        this.subscribe((tasks) => DebugCLI.logTaskUpdate(tasks));
-      } catch (e) {
-         console.error('Failed to load DebugCLI', e);
-      }
-    }
   }
 
   /**
@@ -69,14 +44,27 @@ export class Scheduler extends CoreScheduler {
       if (!el) {
         el = document.createElement('hs-devtools');
         if (options?.theme) el.setAttribute('theme', options.theme);
+        if (options?.dockPosition) el.setAttribute('dock', options.dockPosition);
         document.body.appendChild(el);
       }
 
       // Set scheduler API adapter
       el.setScheduler({
-        getTasks: () => this.getAllTasks(),
-        on: (_evt: string, handler: (payload: any) => void) => {
-           return this.subscribe(() => handler({}));
+        getTasks: () => {
+          // Convert Task[] to TaskSnapshot[]
+          return this.getAllTasks().map(task => ({
+            id: task.id,
+            status: task.status,
+            lastRun: task.lastRun || null,
+            nextRun: task.nextRun || null,
+            executionCount: task.executionCount || 0,
+            schedule: task.schedule,
+            tags: task.tags || [],
+            error: task.status === 'error' ? 'Execution failed' : null
+          }));
+        },
+        on: (evt: string, handler: (payload: any) => void) => {
+           return this.on(evt, handler);
         },
         trigger: (id: string) => this.triggerTask(id),
         pause: (id: string) => this.stopTask(id),

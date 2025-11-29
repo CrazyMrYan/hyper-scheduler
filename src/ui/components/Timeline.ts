@@ -22,6 +22,13 @@ export class Timeline extends HTMLElement {
     this.ctx = this.$canvas.getContext('2d')!;
     this.setupZoom();
     this.startLoop();
+    
+    // Add ResizeObserver
+    const resizeObserver = new ResizeObserver(() => {
+      // Trigger a redraw on next frame
+      this.draw();
+    });
+    resizeObserver.observe(this);
   }
 
   set data(val: { tasks: Map<string, TaskSnapshot>, history: Map<string, ExecutionRecord[]> }) {
@@ -69,6 +76,8 @@ export class Timeline extends HTMLElement {
     const width = this.$canvas.clientWidth;
     const height = this.$canvas.clientHeight;
     
+    if (width === 0 || height === 0) return;
+    
     this.$canvas.width = width * dpr;
     this.$canvas.height = height * dpr;
     this.ctx.scale(dpr, dpr);
@@ -79,29 +88,38 @@ export class Timeline extends HTMLElement {
     const labelWidth = 150;
     const taskIds = Array.from(this._tasks.keys());
     
+    // Get computed colors from host element
+    const hostStyles = getComputedStyle(this);
+    const bgColor = hostStyles.getPropertyValue('--hs-bg').trim() || '#1e1e1e';
+    const textColor = hostStyles.getPropertyValue('--hs-text').trim() || '#fff';
+    const textSecondary = hostStyles.getPropertyValue('--hs-text-secondary').trim() || '#888';
+    const borderColor = hostStyles.getPropertyValue('--hs-border').trim() || '#333';
+    const successColor = hostStyles.getPropertyValue('--hs-success').trim() || '#22c55e';
+    const dangerColor = hostStyles.getPropertyValue('--hs-danger').trim() || '#ef4444';
+    
     // Clear
-    this.ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-bg') || '#1e1e1e';
+    this.ctx.fillStyle = bgColor;
     this.ctx.fillRect(0, 0, width, height);
     
     // Draw time axis
-    this.drawTimeAxis(width, labelWidth, startTime, now);
+    this.drawTimeAxis(width, labelWidth, startTime, textSecondary, borderColor);
     
     // Draw task rows
     taskIds.forEach((taskId, index) => {
       const y = index * rowHeight + 60;
-      this.drawTaskRow(taskId, y, width, labelWidth, startTime, now);
+      this.drawTaskRow(taskId, y, width, labelWidth, startTime, now, textColor, textSecondary, borderColor, successColor, dangerColor);
     });
     
     // Draw legend
-    this.drawLegend(width, height);
+    this.drawLegend(width, height, textSecondary, successColor);
   }
 
-  private drawTimeAxis(width: number, labelWidth: number, startTime: number, _endTime: number) {
+  private drawTimeAxis(width: number, labelWidth: number, startTime: number, textSecondary: string, borderColor: string) {
     const ctx = this.ctx;
     const timelineWidth = width - labelWidth - 20;
     const segments = 4;
     
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-text-secondary') || '#888';
+    ctx.fillStyle = textSecondary;
     ctx.font = '10px monospace';
     ctx.textAlign = 'center';
     
@@ -118,7 +136,7 @@ export class Timeline extends HTMLElement {
       ctx.fillText(timeStr, x, 30);
       
       // Draw vertical grid line
-      ctx.strokeStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-border') || '#333';
+      ctx.strokeStyle = borderColor;
       ctx.beginPath();
       ctx.moveTo(x, 40);
       ctx.lineTo(x, this.$canvas.clientHeight - 40);
@@ -130,24 +148,24 @@ export class Timeline extends HTMLElement {
     ctx.fillText(`Time Range: Last ${Math.round(this.timeRange / 1000)}s`, 10, 15);
   }
 
-  private drawTaskRow(taskId: string, y: number, width: number, labelWidth: number, startTime: number, endTime: number) {
+  private drawTaskRow(taskId: string, y: number, width: number, labelWidth: number, startTime: number, endTime: number, textColor: string, textSecondary: string, borderColor: string, successColor: string, dangerColor: string) {
     const ctx = this.ctx;
     const timelineWidth = width - labelWidth - 20;
     
     // Draw task label
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-text') || '#fff';
+    ctx.fillStyle = textColor;
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(taskId, 10, y + 15);
     
     // Draw driver indicator
     const driver = 'W'; // TODO: get from task config
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-text-secondary') || '#888';
+    ctx.fillStyle = textSecondary;
     ctx.font = '9px monospace';
     ctx.fillText(`[${driver}]`, 10, y + 28);
     
     // Draw separator line
-    ctx.strokeStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-border') || '#333';
+    ctx.strokeStyle = borderColor;
     ctx.beginPath();
     ctx.moveTo(0, y + 35);
     ctx.lineTo(width, y + 35);
@@ -163,18 +181,14 @@ export class Timeline extends HTMLElement {
       
       if (duration < 10) {
         // Draw as dot for instant tasks
-        ctx.fillStyle = log.success 
-          ? (getComputedStyle(this.$canvas).getPropertyValue('--hs-success') || '#22c55e')
-          : (getComputedStyle(this.$canvas).getPropertyValue('--hs-danger') || '#ef4444');
+        ctx.fillStyle = log.success ? successColor : dangerColor;
         ctx.beginPath();
         ctx.arc(x, y + 15, 3, 0, Math.PI * 2);
         ctx.fill();
       } else {
         // Draw as bar for long tasks
         const barWidth = Math.max(2, (duration / this.timeRange) * timelineWidth);
-        ctx.fillStyle = log.success 
-          ? (getComputedStyle(this.$canvas).getPropertyValue('--hs-success') || '#22c55e')
-          : (getComputedStyle(this.$canvas).getPropertyValue('--hs-danger') || '#ef4444');
+        ctx.fillStyle = log.success ? successColor : dangerColor;
         ctx.globalAlpha = 0.7;
         ctx.fillRect(x, y + 5, barWidth, 20);
         ctx.globalAlpha = 1;
@@ -182,13 +196,13 @@ export class Timeline extends HTMLElement {
     });
   }
 
-  private drawLegend(_width: number, height: number) {
+  private drawLegend(_width: number, height: number, textSecondary: string, successColor: string) {
     const ctx = this.ctx;
     const legendY = height - 25;
     
     ctx.font = '10px sans-serif';
     ctx.textAlign = 'left';
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-text-secondary') || '#888';
+    ctx.fillStyle = textSecondary;
     
     let x = 10;
     
@@ -196,20 +210,20 @@ export class Timeline extends HTMLElement {
     ctx.fillText('Legend:', x, legendY);
     x += 50;
     
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-success') || '#22c55e';
+    ctx.fillStyle = successColor;
     ctx.beginPath();
     ctx.arc(x, legendY - 4, 3, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-text-secondary') || '#888';
+    ctx.fillStyle = textSecondary;
     ctx.fillText('Instant', x + 10, legendY);
     x += 60;
     
     // Bar legend
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-success') || '#22c55e';
+    ctx.fillStyle = successColor;
     ctx.globalAlpha = 0.7;
     ctx.fillRect(x, legendY - 8, 15, 10);
     ctx.globalAlpha = 1;
-    ctx.fillStyle = getComputedStyle(this.$canvas).getPropertyValue('--hs-text-secondary') || '#888';
+    ctx.fillStyle = textSecondary;
     ctx.fillText('Duration', x + 20, legendY);
     x += 80;
     
