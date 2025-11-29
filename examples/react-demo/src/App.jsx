@@ -1,68 +1,89 @@
-import { useState, useEffect, useRef } from 'react'
-import { Scheduler } from 'hyper-scheduler'
+import { useState, useEffect, useRef } from 'react';
+import { Scheduler, DevTools } from 'hyper-scheduler';
+import './App.css';
 
 function App() {
-  const [logs, setLogs] = useState([])
-  const [isRunning, setIsRunning] = useState(false)
-  const schedulerRef = useRef(null)
+  const [logs, setLogs] = useState([]);
+  const [isRunning, setIsRunning] = useState(false);
+  const schedulerRef = useRef(null);
 
   const addLog = (msg) => {
-    setLogs(prev => [`[${new Date().toLocaleTimeString()}] ${msg}`, ...prev].slice(0, 20))
-  }
+    const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+    setLogs(prev => [...prev.slice(-9), `[${time}] ${msg}`]);
+  };
 
   useEffect(() => {
-    schedulerRef.current = new Scheduler({ debug: true })
-    
-    schedulerRef.current.addTask({
-      id: 'react-cron',
-      schedule: '*/4 * * * * *',
-      handler: () => addLog('React Cron Task (4s)')
-    })
+    // 准备插件
+    const plugins = [];
+    if (import.meta.env.DEV) {
+      plugins.push(new DevTools({ theme: 'auto', language: 'zh' }));
+    }
 
-    schedulerRef.current.addTask({
+    // 创建调度器
+    schedulerRef.current = new Scheduler({ 
+      debug: true,
+      plugins: plugins
+    });
+
+    // Cron 任务 - 每 3 秒
+    schedulerRef.current.createTask({
+      id: 'react-cron',
+      schedule: '*/3 * * * * *',
+      handler: () => addLog('✅ Cron 任务执行 (每3秒)')
+    });
+
+    // 间隔任务 - 每 5 秒
+    schedulerRef.current.createTask({
       id: 'react-interval',
-      schedule: '6s',
-      handler: () => addLog('React Interval Task (6s)')
-    })
+      schedule: '5s',
+      handler: () => addLog('✅ 间隔任务执行 (每5秒)')
+    });
+
+    addLog('✨ React 应用已加载');
 
     return () => {
       if (schedulerRef.current) {
-        schedulerRef.current.stop()
+        schedulerRef.current.stop();
       }
-    }
-  }, [])
+    };
+  }, []);
 
-  const toggle = () => {
-    if (!schedulerRef.current) return
-    
+  const handleToggle = () => {
+    if (!schedulerRef.current) return;
+
     if (isRunning) {
-      schedulerRef.current.stop()
-      addLog('Scheduler Stopped')
+      schedulerRef.current.stop();
+      addLog('⏹️ 调度器已停止');
     } else {
-      schedulerRef.current.start()
-      addLog('Scheduler Started')
+      schedulerRef.current.start();
+      addLog('🚀 调度器已启动');
     }
-    setIsRunning(!isRunning)
-  }
+    setIsRunning(!isRunning);
+  };
 
   return (
-    <div style={{ maxWidth: '600px', margin: '0 auto', padding: '2rem', fontFamily: 'sans-serif' }}>
-      <h1>React Demo</h1>
-      <div style={{ border: '1px solid #ccc', padding: '1rem', borderRadius: '8px' }}>
-        <button 
-          onClick={toggle}
-          style={{ padding: '0.5rem 1rem', marginBottom: '1rem', cursor: 'pointer' }}
-        >
-          {isRunning ? 'Stop Scheduler' : 'Start Scheduler'}
+    <div className="app">
+      <div className="card">
+        <h1>🕒 Hyper Scheduler</h1>
+        <p className="subtitle">React 示例</p>
+        <div className="info">
+          <strong>💡 提示：</strong> 点击右下角的悬浮球打开 DevTools 面板
+        </div>
+        <button className="btn-primary" onClick={handleToggle}>
+          {isRunning ? '⏹️ 停止调度器' : '▶️ 启动调度器'}
         </button>
-        <div style={{ background: '#f9f9f9', padding: '1rem', borderRadius: '4px', height: '200px', overflowY: 'auto', fontFamily: 'monospace' }}>
+      </div>
+
+      <div className="card">
+        <h2>📋 执行日志</h2>
+        <div className="log-box">
           {logs.map((log, index) => (
             <div key={index}>{log}</div>
           ))}
         </div>
       </div>
     </div>
-  )
+  );
 }
 
-export default App
+export default App;

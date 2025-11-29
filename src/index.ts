@@ -1,8 +1,9 @@
 import { Scheduler as CoreScheduler } from './core/Scheduler';
-import { SchedulerConfig, DevToolsOptions } from './types';
+import { SchedulerConfig } from './types';
 import { NodeTimer } from './platform/node/NodeTimer';
 import { BrowserTimer } from './platform/browser/BrowserTimer';
 import { TimerStrategy } from './platform/TimerStrategy';
+import { DevTools } from './plugins/DevTools';
 
 // Determine environment
 const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
@@ -26,66 +27,7 @@ export class Scheduler extends CoreScheduler {
   constructor(config?: SchedulerConfig) {
     super(getDefaultTimerStrategy(), config);
   }
-
-  /**
-   * 启动 DevTools 并挂载到页面
-   */
-  async attachDevTools(options?: DevToolsOptions): Promise<void> {
-    if (!isBrowser) {
-      console.warn('DevTools can only be attached in browser environment');
-      return;
-    }
-    try {
-      // Dynamic import to avoid bundling UI code for Node
-      await import('./ui/components/DevTools');
-      
-      // Check if element exists
-      let el = document.querySelector('hs-devtools') as any;
-      if (!el) {
-        el = document.createElement('hs-devtools');
-        document.body.appendChild(el);
-      }
-      
-      // Apply options
-      if (options?.theme) el.setAttribute('theme', options.theme);
-      if (options?.dockPosition) el.setAttribute('dock', options.dockPosition);
-      if (options?.language) el.setAttribute('language', options.language);
-      if (options?.defaultZoom) el.setAttribute('default-zoom', options.defaultZoom.toString());
-      if (options?.trigger) {
-        if (options.trigger.backgroundColor) el.setAttribute('trigger-bg', options.trigger.backgroundColor);
-        if (options.trigger.textColor) el.setAttribute('trigger-color', options.trigger.textColor);
-        if (options.trigger.position) el.setAttribute('trigger-position', options.trigger.position);
-      }
-
-      // Set scheduler API adapter
-      el.setScheduler({
-        getTasks: () => {
-          // Convert Task[] to TaskSnapshot[]
-          return this.getAllTasks().map(task => ({
-            id: task.id,
-            status: task.status,
-            lastRun: task.lastRun || null,
-            nextRun: task.nextRun || null,
-            executionCount: task.executionCount || 0,
-            schedule: task.schedule,
-            tags: task.tags || [],
-            error: task.status === 'error' ? 'Execution failed' : null
-          }));
-        },
-        on: (evt: string, handler: (payload: any) => void) => {
-           return this.on(evt, handler);
-        },
-        trigger: (id: string) => this.triggerTask(id),
-        pause: (id: string) => this.stopTask(id),
-        resume: (id: string) => this.startTask(id),
-        remove: (id: string) => this.deleteTask(id)
-      });
-
-    } catch (e) {
-      console.error('Failed to load DevTools', e);
-    }
-  }
 }
 
 export * from './types';
-export { CoreScheduler };
+export { CoreScheduler, DevTools };

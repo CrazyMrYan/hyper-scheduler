@@ -60,70 +60,51 @@ import { Scheduler } from 'hyper-scheduler';
 
 const scheduler = new Scheduler({ debug: true });
 
-// 心跳检测：每 10 秒
+// Cron 任务：每 3 秒
 scheduler.createTask({
-  id: 'heartbeat',
-  schedule: '10s',
-  handler: () => console.log('Heartbeat'),
-  tags: ['monitor']
+  id: 'cron-task',
+  schedule: '*/3 * * * * *',
+  handler: () => console.log('Cron task executed')
 });
 
-// 数据同步：每 5 分钟，带重试和错误处理
+// 间隔任务：每 5 秒
 scheduler.createTask({
-  id: 'data-sync',
-  schedule: '5m',
-  handler: async () => {
-    await syncData();
-  },
-  tags: ['sync'],
-  options: {
-    retry: {
-      maxAttempts: 3,
-      initialDelay: 1000,
-      factor: 2
-    },
-    onError: (error, taskId) => {
-      console.error(`${taskId} failed:`, error.message);
-    }
-  }
+  id: 'interval-task',
+  schedule: '5s',
+  handler: () => console.log('Interval task executed')
 });
 
-// 事件监听
-scheduler.on('task_completed', ({ taskId, duration }) => {
-  console.log(`${taskId} completed in ${duration}ms`);
-});
-
-scheduler.on('task_failed', ({ taskId, error }) => {
-  console.error(`${taskId} failed: ${error}`);
-});
-
-// 启动
+// 启动调度器
 scheduler.start();
 ```
 
 ## 浏览器环境
 
-在浏览器中可以启用可视化调试工具：
+在浏览器中可以启用可视化调试工具，通过在 Scheduler 构造函数中传入 DevTools 插件实现：
 
 ```typescript
-const scheduler = new Scheduler();
+import { Scheduler, DevTools } from 'hyper-scheduler';
+
+const scheduler = new Scheduler({
+  debug: true,
+  plugins: [
+    new DevTools({
+      theme: 'auto',
+      dockPosition: 'right',
+      language: 'zh',
+      defaultZoom: 1,
+      trigger: {
+        backgroundColor: '#3b82f6',
+        textColor: '#ffffff',
+        position: 'bottom-right'
+      }
+    })
+  ]
+});
 
 // 注册任务...
 
 scheduler.start();
-
-// 启动 DevTools
-await scheduler.attachDevTools({
-  theme: 'auto',
-  dockPosition: 'right',
-  language: 'zh',
-  defaultZoom: 1,
-  trigger: {
-    backgroundColor: '#3b82f6',
-    textColor: '#ffffff',
-    position: 'bottom-right'
-  }
-});
 ```
 
 ## 调度规则

@@ -97,13 +97,29 @@
             console.log(msg);
         }
 
-        const { Scheduler } = window.HyperScheduler;
+        const { Scheduler, DevTools } = window.HyperScheduler;
         
         // 创建调度器实例
         log('创建调度器实例...', 'info');
-        const scheduler = new Scheduler({ debug: true });
+        
+        const plugins = [];
+        if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+             log('检测到开发环境，准备加载 DevTools 插件', 'info');
+             plugins.push(new DevTools({ theme: 'auto' }));
+        } else {
+            log('ℹ️ 非开发环境，DevTools 未加载。', 'info');
+        }
 
-        // 创建任务（在 attachDevTools 之前）
+        const scheduler = new Scheduler({ 
+            debug: true,
+            plugins: plugins
+        });
+
+        if (plugins.length > 0) {
+             log('✅ DevTools 插件已注入！点击右下角悬浮球打开面板', 'success');
+        }
+
+        // 创建任务（在 DevTools 加载之前或之后均可）
         log('注册任务...', 'info');
         
         scheduler.createTask({
@@ -133,12 +149,6 @@
 
         log('任务注册完成，共 3 个任务', 'info');
 
-        // 挂载 DevTools UI（在创建任务之后）
-        log('挂载 DevTools UI...', 'info');
-        scheduler.attachDevTools({ theme: 'auto' }).then(() => {
-            log('✅ DevTools 已就绪！点击右下角悬浮球打开面板', 'success');
-        });
-        
         // 绑定按钮事件
         document.getElementById('btn-start').onclick = () => {
             scheduler.start();

@@ -3,35 +3,28 @@
 
 const { Scheduler } = require('../../dist/index.cjs');
 
-// 初始化调度器，开启调试模式
+// 创建调度器
 const scheduler = new Scheduler({ debug: true });
 
-// 示例 1: Cron 任务 - 每 2 秒执行一次
-scheduler.addTask({
+// Cron 任务 - 每 3 秒
+scheduler.createTask({
   id: 'cron-task',
-  schedule: '*/2 * * * * *', // Cron 表达式
+  schedule: '*/3 * * * * *',
   handler: () => {
-    console.log('Cron 任务执行:', new Date().toLocaleTimeString());
+    console.log('✅ Cron 任务执行:', new Date().toLocaleTimeString());
   }
 });
 
-// 示例 2: 间隔任务 - 每 5 秒执行一次 (新特性)
-scheduler.addTask({
+// 间隔任务 - 每 5 秒
+scheduler.createTask({
   id: 'interval-task',
-  schedule: '5s', // 间隔字符串
+  schedule: '5s',
   handler: () => {
-    console.log('间隔任务执行:', new Date().toLocaleTimeString());
+    console.log('✅ 间隔任务执行:', new Date().toLocaleTimeString());
   }
 });
 
 // 启动调度器
 scheduler.start();
 
-console.log('调度器已启动。按 Ctrl+C 退出。');
-console.log('计划在 15 秒后停止调度器...');
-
-// 15 秒后停止
-setTimeout(() => {
-  scheduler.stop();
-  console.log('调度器已停止。');
-}, 15000);
+console.log('🚀 调度器已启动，按 Ctrl+C 退出');

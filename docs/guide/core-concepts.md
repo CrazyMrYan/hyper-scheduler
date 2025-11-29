@@ -283,15 +283,21 @@ unsubscribe();
 ### 示例
 
 ```typescript
-await scheduler.attachDevTools({
-  theme: 'dark',
-  language: 'zh',
-  dockPosition: 'bottom',
-  defaultZoom: 2,
-  trigger: {
-    backgroundColor: '#10b981',
-    textColor: '#ffffff',
-    position: 'bottom-left'
-  }
+import { Scheduler, DevTools } from 'hyper-scheduler';
+
+const scheduler = new Scheduler({
+  plugins: [
+    new DevTools({
+      theme: 'dark',
+      language: 'zh',
+      dockPosition: 'bottom',
+      defaultZoom: 2,
+      trigger: {
+        backgroundColor: '#10b981',
+        textColor: '#ffffff',
+        position: 'bottom-left'
+      }
+    })
+  ]
 });
 ```

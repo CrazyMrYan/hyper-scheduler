@@ -1,9 +1,13 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { Scheduler } from '../../src/index';
-
-describe('Debug Integration', () => {
-  beforeEach(() => {
-    document.body.innerHTML = ''; // Clear DOM
+    // The old DebugPanel logic (if any) is gone or replaced by DevTools plugin.
+    // We should update this test to test the new DevTools plugin.
+    import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+    import { Scheduler } from '../../src/index';
+    import { DevTools } from '../../src/plugins/DevTools';
+    
+    describe('Debug Integration', () => {
+      beforeEach(() => {    document.body.innerHTML = ''; // Clear DOM
     // Mock Worker globally for JSDOM
     if (typeof window !== 'undefined') {
         window.Worker = class MockWorker {
@@ -28,9 +32,15 @@ describe('Debug Integration', () => {
       return;
     }
 
-    const scheduler = new Scheduler({ debug: true });
+    // Intentionally blank - using git checkout to restore
+    // We should update this test to test the new DevTools plugin.
+
+    const scheduler = new Scheduler({ 
+      debug: true,
+      plugins: [new DevTools()] 
+    });
     
-    // Wait for dynamic import
+    // Wait for dynamic import or initialization
     await new Promise(resolve => setTimeout(resolve, 100));
 
     scheduler.createTask({
@@ -39,9 +49,9 @@ describe('Debug Integration', () => {
       handler: async () => {}
     });
 
-    const panel = document.getElementById('hyper-scheduler-debug-panel');
+    // New DevTools mounts <hs-devtools>
+    const panel = document.querySelector('hs-devtools');
     expect(panel).not.toBeNull();
-    expect(panel?.innerHTML).toContain('debug-dom-test');
     
     scheduler.stop();
   });

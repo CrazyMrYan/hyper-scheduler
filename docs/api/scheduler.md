@@ -17,16 +17,20 @@ new Scheduler(config?: SchedulerConfig)
 | `config.debug` | `boolean` | `false` | 启用调试日志输出 |
 | `config.timezone` | `string` | 系统时区 | 全局时区设置，如 `'Asia/Shanghai'` |
 | `config.maxHistory` | `number` | `50` | 每个任务保留的最大执行历史记录数 |
+| `config.plugins` | `HyperSchedulerPlugin[]` | `-` | 要在初始化时加载的插件实例数组 |
 
 **示例**
 
 ```typescript
-import { Scheduler } from 'hyper-scheduler';
+import { Scheduler, DevTools } from 'hyper-scheduler';
 
 const scheduler = new Scheduler({
   debug: true,
   timezone: 'Asia/Shanghai',
-  maxHistory: 100
+  maxHistory: 100,
+  plugins: [
+    new DevTools({ theme: 'dark' })
+  ]
 });
 ```
 
@@ -229,49 +233,7 @@ unsubscribe();
 
 ---
 
-#### attachDevTools
 
-启动可视化调试工具（仅浏览器环境）。
-
-```typescript
-attachDevTools(options?: DevToolsOptions): Promise<void>
-```
-
-**参数**
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `options.theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | 主题模式 |
-| `options.dockPosition` | `'right' \| 'bottom'` | `'right'` | 面板停靠位置 |
-| `options.language` | `'en' \| 'zh'` | `'en'` | 界面语言 |
-| `options.defaultZoom` | `number` | `1` | 时间线默认缩放级别 (0.5-5) |
-| `options.trigger` | `TriggerOptions` | - | 悬浮按钮配置 |
-
-**TriggerOptions**
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `backgroundColor` | `string` | `'#3b82f6'` | 悬浮按钮背景色 |
-| `textColor` | `string` | `'#ffffff'` | 悬浮按钮文字/图标颜色 |
-| `position` | `string` | `'bottom-right'` | 悬浮按钮位置，可选: `'bottom-right'`, `'bottom-left'`, `'top-right'`, `'top-left'` |
-
-**示例**
-
-```typescript
-await scheduler.attachDevTools({
-  theme: 'dark',
-  dockPosition: 'bottom',
-  language: 'zh',
-  defaultZoom: 2,
-  trigger: {
-    backgroundColor: '#10b981',
-    textColor: '#ffffff',
-    position: 'bottom-left'
-  }
-});
-```
-
----
 
 ## 类型定义
 
@@ -360,5 +322,28 @@ interface DevToolsOptions {
     textColor?: string;
     position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
   };
+}
+```
+
+### HyperSchedulerPlugin
+
+调度器插件接口。
+
+```typescript
+interface HyperSchedulerPlugin {
+  name: string;
+  init(scheduler: Scheduler, options?: any): void;
+}
+```
+
+### DevTools
+
+DevTools 插件类，实现了 `HyperSchedulerPlugin` 接口。
+
+```typescript
+class DevTools implements HyperSchedulerPlugin {
+  name: 'DevTools';
+  constructor(options?: DevToolsOptions);
+  init(scheduler: Scheduler): void;
 }
 ```

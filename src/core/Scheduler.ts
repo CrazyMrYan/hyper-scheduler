@@ -35,6 +35,18 @@ export class Scheduler {
     this.timers = new Map();
     this.listeners = [];
     this.eventListeners = new Map();
+
+    // Initialize plugins
+    if (this.config.plugins && Array.isArray(this.config.plugins)) {
+      this.config.plugins.forEach(plugin => {
+        try {
+          this.log(`Initializing plugin: ${plugin.name}`);
+          plugin.init(this);
+        } catch (err) {
+          console.warn(`[HyperScheduler] Failed to initialize plugin ${plugin.name}:`, err);
+        }
+      });
+    }
   }
 
   /**

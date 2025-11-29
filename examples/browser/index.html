@@ -3,90 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hyper Scheduler 浏览器示例</title>
+    <title>Hyper Scheduler - 浏览器示例</title>
     <style>
-        body { font-family: system-ui, sans-serif; padding: 20px; line-height: 1.6; }
-        .log-box { background: #f5f5f5; padding: 15px; border-radius: 4px; height: 300px; overflow-y: auto; font-family: monospace; border: 1px solid #ddd; }
-        button { padding: 8px 16px; margin-right: 10px; cursor: pointer; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        h1 {
+            margin: 0 0 8px 0;
+            color: #333;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 16px;
+        }
+        .info {
+            background: #e3f2fd;
+            padding: 12px;
+            border-radius: 4px;
+            border-left: 4px solid #2196f3;
+            margin-bottom: 16px;
+        }
+        button {
+            padding: 10px 20px;
+            margin-right: 8px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+        }
+        .btn-primary { background: #2196f3; color: white; }
+        .btn-danger { background: #f44336; color: white; }
+        button:hover { opacity: 0.9; }
+        .log-box {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 16px;
+            border-radius: 4px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: 'Monaco', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .log-success { color: #4ade80; }
+        .log-info { color: #60a5fa; }
     </style>
 </head>
 <body>
-    <h1>Hyper Scheduler 浏览器示例</h1>
-    <p>请打开控制台 (F12) 查看详细日志，或者观察下方的日志面板。</p>
-    <p>页面右下角应该会出现调试面板。</p>
-
-    <div class="controls">
-        <button id="btn-start">启动调度器</button>
-        <button id="btn-stop">停止调度器</button>
+    <div class="card">
+        <h1>🕒 Hyper Scheduler</h1>
+        <p class="subtitle">浏览器示例</p>
+        <div class="info">
+            <strong>💡 提示：</strong> 点击右下角的悬浮球打开 DevTools 面板
+        </div>
+        <div>
+            <button class="btn-primary" id="btn-start">▶️ 启动调度器</button>
+            <button class="btn-danger" id="btn-stop">⏹️ 停止调度器</button>
+        </div>
     </div>
-    <br>
-    <div id="logs" class="log-box"></div>
 
-    <!-- 引入 Hyper Scheduler (UMD) -->
+    <div class="card">
+        <h2 style="margin-top:0">📋 执行日志</h2>
+        <div id="logs" class="log-box"></div>
+    </div>
+
     <script src="../../dist/index.umd.cjs"></script>
-    
     <script>
-        // 简单的日志辅助函数
         const logBox = document.getElementById('logs');
-        function log(msg) {
-            const line = document.createElement('div');
-            line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-            logBox.appendChild(line);
+        
+        function log(msg, type = 'info') {
+            const time = new Date().toLocaleTimeString('zh-CN', { hour12: false });
+            const div = document.createElement('div');
+            div.className = `log-${type}`;
+            div.textContent = `[${time}] ${msg}`;
+            logBox.appendChild(div);
             logBox.scrollTop = logBox.scrollHeight;
-            console.log(msg);
+        }
+        
+        const { Scheduler, DevTools } = window.HyperScheduler;
+        
+        const plugins = [];
+        // 只有在开发环境（例如，通过 localhost 访问）才挂载 DevTools UI
+        if (['localhost', '127.0.0.1'].includes(window.location.hostname)) {
+            plugins.push(new DevTools({ theme: 'auto', language: 'zh' }));
         }
 
-        // 确保 CronParser 全局可用 (如果 UMD 构建未自动处理)
-        // 注意：Vite UMD 构建通常会将 external 依赖期望为全局变量
-        // 这里假设 cron-parser 在 window.cronParser 或者由 hyper-scheduler 内部处理
-        
-        const { Scheduler } = window.HyperScheduler;
-        
-        const scheduler = new Scheduler({ debug: true });
+        const scheduler = new Scheduler({ 
+            debug: true,
+            plugins: plugins
+        });
 
-        // 挂载新的 DevTools UI
-        scheduler.attachDevTools({ theme: 'auto' });
-        
-        // 1. Cron 任务
+        // Cron 任务 - 每 3 秒
         scheduler.createTask({
-            id: 'browser-cron',
-            schedule: '*/2 * * * * *', // 每 2 秒
+            id: 'cron-task',
+            schedule: '*/3 * * * * *',
             handler: () => {
-                log('Cron 任务 (每2秒) 触发!');
+                log('✅ Cron 任务执行 (每3秒)', 'success');
             }
         });
 
-        // 2. Interval 任务
+        // 间隔任务 - 每 5 秒
         scheduler.createTask({
-            id: 'browser-interval',
-            schedule: '5s', // 每 5 秒
+            id: 'interval-task',
+            schedule: '5s',
             handler: () => {
-                log('Interval 任务 (每5秒) 触发!');
-            }
-        });
-
-        // 3. Tags 任务演示
-        scheduler.createTask({
-            id: 'browser-tags-demo',
-            schedule: '10s',
-            tags: ['demo', 'browser'],
-            handler: () => {
-                log('Tags 任务 [demo, browser] 触发!');
+                log('✅ 间隔任务执行 (每5秒)', 'success');
             }
         });
         
-        // 绑定按钮事件
+        // 按钮事件
         document.getElementById('btn-start').onclick = () => {
             scheduler.start();
-            log('调度器已启动');
+            log('🚀 调度器已启动', 'info');
         };
 
         document.getElementById('btn-stop').onclick = () => {
             scheduler.stop();
-            log('调度器已停止');
+            log('⏹️ 调度器已停止', 'info');
         };
 
-        log('页面已加载，请点击“启动”开始测试。');
+        log('✨ 页面已加载，点击"启动调度器"开始', 'info');
     </script>
 </body>
 </html>

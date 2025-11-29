@@ -43,9 +43,16 @@ export interface Task extends TaskDefinition {
 
 export interface SchedulerConfig {
   debug?: boolean;
-  timezone?: string;
   maxHistory?: number;
+  timezone?: string; // e.g., 'Asia/Shanghai'
+  plugins?: HyperSchedulerPlugin[];
 }
+
+export interface HyperSchedulerPlugin {
+  name: string;
+  init(scheduler: any, options?: any): void;
+}
+
 
 export interface TaskSnapshot {
   id: string;
