@@ -43,9 +43,18 @@ export class Scheduler extends CoreScheduler {
       let el = document.querySelector('hs-devtools') as any;
       if (!el) {
         el = document.createElement('hs-devtools');
-        if (options?.theme) el.setAttribute('theme', options.theme);
-        if (options?.dockPosition) el.setAttribute('dock', options.dockPosition);
         document.body.appendChild(el);
+      }
+      
+      // Apply options
+      if (options?.theme) el.setAttribute('theme', options.theme);
+      if (options?.dockPosition) el.setAttribute('dock', options.dockPosition);
+      if (options?.language) el.setAttribute('language', options.language);
+      if (options?.defaultZoom) el.setAttribute('default-zoom', options.defaultZoom.toString());
+      if (options?.trigger) {
+        if (options.trigger.backgroundColor) el.setAttribute('trigger-bg', options.trigger.backgroundColor);
+        if (options.trigger.textColor) el.setAttribute('trigger-color', options.trigger.textColor);
+        if (options.trigger.position) el.setAttribute('trigger-position', options.trigger.position);
       }
 
       // Set scheduler API adapter

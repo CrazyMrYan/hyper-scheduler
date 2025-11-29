@@ -233,6 +233,15 @@ export class Scheduler {
       this.log(`Task execution failed: ${task.id} - ${err.message}`);
       this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
       
+      // 调用任务的 onError 回调
+      if (task.options?.onError) {
+        try {
+          task.options.onError(err, task.id);
+        } catch (e) {
+          this.log(`onError callback failed: ${e}`);
+        }
+      }
+      
       // Retry logic
       const retryDelay = RetryStrategy.getDelay(attempt, task.options?.retry);
       if (retryDelay >= 0) {
@@ -446,6 +455,15 @@ export class Scheduler {
       this.log(`Task execution failed: ${task.id} - ${err.message}`);
       this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
       
+      // 调用任务的 onError 回调
+      if (task.options?.onError) {
+        try {
+          task.options.onError(err, task.id);
+        } catch (e) {
+          this.log(`onError callback failed: ${e}`);
+        }
+      }
+      
       // Retry logic
       const retryDelay = RetryStrategy.getDelay(attempt, task.options?.retry);
       if (retryDelay >= 0) {
@@ -459,8 +477,7 @@ export class Scheduler {
       } else {
         task.status = 'error';
         this.notify();
-        // Schedule next regular run even if failed? 
-        // Yes, schedule next cron occurrence.
+        // Schedule next regular run even if failed
         this.scheduleTask(task); 
       }
     }

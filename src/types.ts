@@ -11,9 +11,11 @@ export interface TaskOptions {
   retry?: {
     maxAttempts: number;
     initialDelay: number;
-    factor: number;
+    factor?: number;
   };
   timezone?: string;
+  /** 任务执行失败时的错误处理回调 */
+  onError?: (error: Error, taskId: string) => void;
 }
 
 export interface TaskDefinition {
@@ -57,11 +59,23 @@ export interface TaskSnapshot {
 }
 
 export interface DevToolsOptions {
-  autoAttach?: boolean;
+  /** 主题模式 */
   theme?: 'light' | 'dark' | 'auto';
+  /** 面板停靠位置 */
   dockPosition?: 'right' | 'bottom';
-  refreshRate?: number;
-  maxHistory?: number;
+  /** 界面语言 */
+  language?: 'en' | 'zh';
+  /** 时间线默认缩放级别 (0.5-5) */
+  defaultZoom?: number;
+  /** 悬浮按钮配置 */
+  trigger?: {
+    /** 背景色 */
+    backgroundColor?: string;
+    /** 文字/图标颜色 */
+    textColor?: string;
+    /** 位置 */
+    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  };
 }
 
 export interface TaskControlAPI {

@@ -50,8 +50,15 @@ createTask(definition: TaskDefinition): void
 | `definition.schedule` | `string` | ✓ | 调度规则（Cron 表达式或时间间隔） |
 | `definition.handler` | `() => void \| Promise<void>` | ✓ | 任务执行函数 |
 | `definition.tags` | `string[]` | - | 任务标签，用于分类过滤 |
-| `definition.options.retry` | `RetryConfig` | - | 重试配置 |
-| `definition.options.timezone` | `string` | - | 任务专属时区 |
+| `definition.options` | `TaskOptions` | - | 任务选项 |
+
+**TaskOptions**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `retry` | `RetryConfig` | - | 重试配置 |
+| `timezone` | `string` | - | 任务专属时区，覆盖全局设置 |
+| `onError` | `(error: Error, taskId: string) => void` | - | 错误处理回调函数 |
 
 **RetryConfig**
 
@@ -59,12 +66,12 @@ createTask(definition: TaskDefinition): void
 |------|------|--------|------|
 | `maxAttempts` | `number` | - | 最大重试次数 |
 | `initialDelay` | `number` | - | 首次重试延迟（毫秒） |
-| `factor` | `number` | `2` | 延迟递增因子 |
+| `factor` | `number` | `2` | 延迟递增因子（指数退避） |
 
 **示例**
 
 ```typescript
-// Cron 表达式
+// 基础任务
 scheduler.createTask({
   id: 'daily-backup',
   schedule: '0 0 2 * * *', // 每天凌晨 2:00
@@ -74,18 +81,23 @@ scheduler.createTask({
   tags: ['backup', 'critical']
 });
 
-// 时间间隔
+// 带重试和错误处理的任务
 scheduler.createTask({
-  id: 'heartbeat',
-  schedule: '30s', // 每 30 秒
-  handler: () => {
-    sendHeartbeat();
+  id: 'api-sync',
+  schedule: '5m',
+  handler: async () => {
+    await syncWithAPI();
   },
   options: {
     retry: {
       maxAttempts: 3,
       initialDelay: 1000,
-      factor: 2
+      factor: 2  // 重试延迟: 1s, 2s, 4s
+    },
+    onError: (error, taskId) => {
+      console.error(`Task ${taskId} failed:`, error.message);
+      // 发送告警通知
+      sendAlert(taskId, error);
     }
   }
 });
@@ -153,7 +165,7 @@ stopTask(taskId: string): void
 
 #### triggerTask
 
-手动触发任务立即执行一次，不影响正常调度。
+手动触发任务立即执行一次，不影响正常调度。执行完成后恢复到之前的状态。
 
 ```typescript
 triggerTask(taskId: string): Promise<void>
@@ -231,6 +243,33 @@ attachDevTools(options?: DevToolsOptions): Promise<void>
 |------|------|--------|------|
 | `options.theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | 主题模式 |
 | `options.dockPosition` | `'right' \| 'bottom'` | `'right'` | 面板停靠位置 |
+| `options.language` | `'en' \| 'zh'` | `'en'` | 界面语言 |
+| `options.defaultZoom` | `number` | `1` | 时间线默认缩放级别 (0.5-5) |
+| `options.trigger` | `TriggerOptions` | - | 悬浮按钮配置 |
+
+**TriggerOptions**
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `backgroundColor` | `string` | `'#3b82f6'` | 悬浮按钮背景色 |
+| `textColor` | `string` | `'#ffffff'` | 悬浮按钮文字/图标颜色 |
+| `position` | `string` | `'bottom-right'` | 悬浮按钮位置，可选: `'bottom-right'`, `'bottom-left'`, `'top-right'`, `'top-left'` |
+
+**示例**
+
+```typescript
+await scheduler.attachDevTools({
+  theme: 'dark',
+  dockPosition: 'bottom',
+  language: 'zh',
+  defaultZoom: 2,
+  trigger: {
+    backgroundColor: '#10b981',
+    textColor: '#ffffff',
+    position: 'bottom-left'
+  }
+});
+```
 
 ---
 
@@ -268,6 +307,7 @@ interface TaskOptions {
     factor?: number;
   };
   timezone?: string;
+  onError?: (error: Error, taskId: string) => void;
 }
 ```
 
@@ -291,9 +331,9 @@ type TaskStatus = 'idle' | 'running' | 'stopped' | 'error';
 
 | 状态 | 说明 |
 |------|------|
+| `stopped` | 已停止，不参与调度 |
 | `idle` | 等待调度 |
 | `running` | 正在执行 |
-| `stopped` | 已停止 |
 | `error` | 执行出错 |
 
 ### ExecutionRecord
@@ -313,5 +353,12 @@ interface ExecutionRecord {
 interface DevToolsOptions {
   theme?: 'light' | 'dark' | 'auto';
   dockPosition?: 'right' | 'bottom';
+  language?: 'en' | 'zh';
+  defaultZoom?: number;
+  trigger?: {
+    backgroundColor?: string;
+    textColor?: string;
+    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
+  };
 }
 ```

@@ -18,7 +18,8 @@ yarn add hyper-scheduler
 import { Scheduler } from 'hyper-scheduler';
 
 const scheduler = new Scheduler({
-  debug: true // 开启调试日志
+  debug: true,      // 开启调试日志
+  maxHistory: 100   // 保留最近 100 条执行记录
 });
 ```
 
@@ -67,7 +68,7 @@ scheduler.createTask({
   tags: ['monitor']
 });
 
-// 数据同步：每 5 分钟
+// 数据同步：每 5 分钟，带重试和错误处理
 scheduler.createTask({
   id: 'data-sync',
   schedule: '5m',
@@ -78,7 +79,11 @@ scheduler.createTask({
   options: {
     retry: {
       maxAttempts: 3,
-      initialDelay: 1000
+      initialDelay: 1000,
+      factor: 2
+    },
+    onError: (error, taskId) => {
+      console.error(`${taskId} failed:`, error.message);
     }
   }
 });
@@ -110,7 +115,14 @@ scheduler.start();
 // 启动 DevTools
 await scheduler.attachDevTools({
   theme: 'auto',
-  dockPosition: 'right'
+  dockPosition: 'right',
+  language: 'zh',
+  defaultZoom: 1,
+  trigger: {
+    backgroundColor: '#3b82f6',
+    textColor: '#ffffff',
+    position: 'bottom-right'
+  }
 });
 ```
 

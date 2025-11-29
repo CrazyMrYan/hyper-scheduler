@@ -17,7 +17,7 @@ export class RetryStrategy {
       return -1;
     }
 
-    const { maxAttempts, initialDelay, factor } = options;
+    const { maxAttempts, initialDelay, factor = 2 } = options;
 
     if (attempt >= maxAttempts) {
       return -1;

@@ -114,6 +114,79 @@ stopped -> idle -> running -> idle
 
 ---
 
+## 任务选项
+
+### 重试配置
+
+任务执行失败时可自动重试：
+
+```typescript
+scheduler.createTask({
+  id: 'api-call',
+  schedule: '1m',
+  handler: async () => {
+    await callAPI();
+  },
+  options: {
+    retry: {
+      maxAttempts: 3,     // 最大重试次数
+      initialDelay: 1000, // 首次重试延迟 (ms)
+      factor: 2           // 延迟递增因子
+    }
+  }
+});
+```
+
+重试延迟计算：`initialDelay * (factor ^ attempt)`
+
+示例（initialDelay=1000, factor=2）：
+- 第 1 次重试：1000ms
+- 第 2 次重试：2000ms
+- 第 3 次重试：4000ms
+
+### 错误处理
+
+通过 `onError` 回调处理任务执行错误：
+
+```typescript
+scheduler.createTask({
+  id: 'critical-task',
+  schedule: '30s',
+  handler: async () => {
+    await criticalOperation();
+  },
+  options: {
+    onError: (error, taskId) => {
+      // 记录错误日志
+      logger.error(`Task ${taskId} failed:`, error);
+      // 发送告警
+      alertService.send({
+        title: 'Task Failed',
+        message: error.message,
+        taskId
+      });
+    }
+  }
+});
+```
+
+### 时区配置
+
+为任务指定专属时区：
+
+```typescript
+scheduler.createTask({
+  id: 'tokyo-report',
+  schedule: '0 0 9 * * *', // 每天 9:00
+  handler: () => generateReport(),
+  options: {
+    timezone: 'Asia/Tokyo'
+  }
+});
+```
+
+---
+
 ## 计时策略
 
 调度器根据运行环境自动选择计时策略：
@@ -127,36 +200,6 @@ stopped -> idle -> running -> idle
 优先使用 Web Worker 运行计时循环，避免后台标签页节流问题。
 
 浏览器在标签页切换到后台时会限制 `setTimeout` 最小间隔为 1 秒，Web Worker 不受此限制。
-
----
-
-## 重试机制
-
-任务执行失败时可自动重试：
-
-```typescript
-scheduler.createTask({
-  id: 'api-call',
-  schedule: '1m',
-  handler: async () => {
-    await callAPI();
-  },
-  options: {
-    retry: {
-      maxAttempts: 3,    // 最大重试次数
-      initialDelay: 1000, // 首次重试延迟 (ms)
-      factor: 2          // 延迟递增因子
-    }
-  }
-});
-```
-
-重试延迟计算：`initialDelay * (factor ^ attempt)`
-
-示例（initialDelay=1000, factor=2）：
-- 第 1 次重试：1000ms
-- 第 2 次重试：2000ms
-- 第 3 次重试：4000ms
 
 ---
 
@@ -218,3 +261,37 @@ unsubscribe();
 | `task_failed` | 执行失败 |
 | `task_stopped` | 任务停止 |
 | `task_removed` | 任务删除 |
+
+---
+
+## DevTools
+
+浏览器环境下的可视化调试工具。
+
+### 配置项
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `theme` | `'light' \| 'dark' \| 'auto'` | `'auto'` | 主题模式 |
+| `dockPosition` | `'right' \| 'bottom'` | `'right'` | 面板停靠位置 |
+| `language` | `'en' \| 'zh'` | `'en'` | 界面语言 |
+| `defaultZoom` | `number` | `1` | 时间线缩放级别 (0.5-5) |
+| `trigger.backgroundColor` | `string` | `'#3b82f6'` | 悬浮按钮背景色 |
+| `trigger.textColor` | `string` | `'#ffffff'` | 悬浮按钮文字颜色 |
+| `trigger.position` | `string` | `'bottom-right'` | 悬浮按钮位置 |
+
+### 示例
+
+```typescript
+await scheduler.attachDevTools({
+  theme: 'dark',
+  language: 'zh',
+  dockPosition: 'bottom',
+  defaultZoom: 2,
+  trigger: {
+    backgroundColor: '#10b981',
+    textColor: '#ffffff',
+    position: 'bottom-left'
+  }
+});
+```
