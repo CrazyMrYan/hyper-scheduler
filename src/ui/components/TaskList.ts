@@ -199,6 +199,12 @@ export class TaskList extends HTMLElement {
           text-transform: uppercase;
           white-space: nowrap;
         }
+        th:last-child {
+          position: sticky;
+          right: 0;
+          background: var(--hs-bg);
+          box-shadow: -2px 0 4px rgba(0,0,0,0.1);
+        }
         td {
           padding: 8px 12px;
           border-bottom: 1px solid var(--hs-border);

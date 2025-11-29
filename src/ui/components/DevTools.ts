@@ -175,10 +175,10 @@ export class DevTools extends HTMLElement {
       this.$taskList.tasks = tasks;
       this.$timeline.data = { tasks, history: this.store.getState().history };
       
-      // Update stats
+      // Update stats - active = idle + running (正在调度或执行中的任务)
       let active = 0;
       tasks.forEach(t => {
-        if (t.status === 'running') active++;
+        if (t.status === 'idle' || t.status === 'running') active++;
       });
       this.$header.stats = { active, total: tasks.size };
       

@@ -1,71 +1,52 @@
 # 快速开始
 
-欢迎使用 Hyper Scheduler！本文档将引导你在项目中快速集成并运行第一个定时任务。
-
 ## 安装
-
-使用你喜欢的包管理器安装：
 
 ```bash
 npm install hyper-scheduler
-# 或者
+# 或
 pnpm add hyper-scheduler
-# 或者
+# 或
 yarn add hyper-scheduler
 ```
 
 ## 基础用法
 
-### 1. 引入调度器
-
-在你的项目中引入 `Scheduler` 类。
+### 1. 创建调度器
 
 ```typescript
 import { Scheduler } from 'hyper-scheduler';
-```
 
-### 2. 创建实例
-
-```typescript
 const scheduler = new Scheduler({
-  // 可选配置
-  debug: true, // 开启调试日志
+  debug: true // 开启调试日志
 });
 ```
 
-### 3. 注册任务
+### 2. 注册任务
 
-Hyper Scheduler 支持两种调度模式：**Cron 表达式** 和 **时间间隔字符串**。
-
-#### 使用 Cron 表达式 (每分钟执行)
+支持两种调度规则：Cron 表达式和时间间隔。
 
 ```typescript
-scheduler.addTask({
-  id: 'cron-task-01',
-  schedule: '* * * * *', // 每分钟
+// Cron 表达式：每分钟执行
+scheduler.createTask({
+  id: 'cron-task',
+  schedule: '0 * * * * *',
   handler: () => {
-    console.log('Cron 任务执行:', new Date().toLocaleTimeString());
-  },
+    console.log('Cron task executed');
+  }
+});
+
+// 时间间隔：每 5 秒执行
+scheduler.createTask({
+  id: 'interval-task',
+  schedule: '5s',
+  handler: () => {
+    console.log('Interval task executed');
+  }
 });
 ```
 
-#### 使用时间间隔 (每 5 秒执行)
-
-这是 v1.1 新增的特性，更加直观。
-
-```typescript
-scheduler.addTask({
-  id: 'interval-task-01',
-  schedule: '5s', // 支持 s(秒), m(分), h(时), d(天)
-  handler: () => {
-    console.log('Interval 任务执行:', new Date().toLocaleTimeString());
-  },
-});
-```
-
-### 4. 启动调度器
-
-注册完任务后，别忘了启动调度器。
+### 3. 启动调度器
 
 ```typescript
 scheduler.start();
@@ -76,29 +57,89 @@ scheduler.start();
 ```typescript
 import { Scheduler } from 'hyper-scheduler';
 
-// 初始化
 const scheduler = new Scheduler({ debug: true });
 
-// 任务 1: 每 10 秒打印一次
-scheduler.addTask({
+// 心跳检测：每 10 秒
+scheduler.createTask({
   id: 'heartbeat',
   schedule: '10s',
-  handler: () => console.log('💓 心跳检测'),
+  handler: () => console.log('Heartbeat'),
+  tags: ['monitor']
 });
 
-// 任务 2: 每小时整点报时
-scheduler.addTask({
-  id: 'hourly-chime',
-  schedule: '0 * * * *', 
-  handler: () => console.log('🔔 整点报时'),
+// 数据同步：每 5 分钟
+scheduler.createTask({
+  id: 'data-sync',
+  schedule: '5m',
+  handler: async () => {
+    await syncData();
+  },
+  tags: ['sync'],
+  options: {
+    retry: {
+      maxAttempts: 3,
+      initialDelay: 1000
+    }
+  }
+});
+
+// 事件监听
+scheduler.on('task_completed', ({ taskId, duration }) => {
+  console.log(`${taskId} completed in ${duration}ms`);
+});
+
+scheduler.on('task_failed', ({ taskId, error }) => {
+  console.error(`${taskId} failed: ${error}`);
 });
 
 // 启动
-console.log('调度器已启动...');
 scheduler.start();
 ```
 
+## 浏览器环境
+
+在浏览器中可以启用可视化调试工具：
+
+```typescript
+const scheduler = new Scheduler();
+
+// 注册任务...
+
+scheduler.start();
+
+// 启动 DevTools
+await scheduler.attachDevTools({
+  theme: 'auto',
+  dockPosition: 'right'
+});
+```
+
+## 调度规则
+
+### Cron 表达式
+
+```
+秒 分 时 日 月 周
+```
+
+| 示例 | 说明 |
+|------|------|
+| `0 * * * * *` | 每分钟 |
+| `*/5 * * * * *` | 每 5 秒 |
+| `0 0 * * * *` | 每小时 |
+| `0 0 2 * * *` | 每天凌晨 2:00 |
+| `0 0 9 * * 1` | 每周一 9:00 |
+
+### 时间间隔
+
+| 格式 | 说明 |
+|------|------|
+| `30s` | 每 30 秒 |
+| `5m` | 每 5 分钟 |
+| `2h` | 每 2 小时 |
+| `1d` | 每天 |
+
 ## 下一步
 
-- 了解 [核心概念](./core-concepts.md) 深入理解调度机制。
-- 查看 [API 文档](../api/scheduler.md) 获取完整参数说明。
+- [核心概念](./core-concepts.md) - 深入理解调度机制
+- [API 文档](../api/scheduler.md) - 完整 API 参考

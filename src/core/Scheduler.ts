@@ -288,14 +288,57 @@ export class Scheduler {
   }
 
   /**
-   * 手动触发任务执行（忽略状态检查）。
+   * 手动触发任务执行（忽略调度器状态，立即执行一次）。
+   * 执行完成后恢复到之前的状态。
    * @param id 任务 ID
    */
   async triggerTask(id: string): Promise<void> {
     const task = this.getTask(id);
-    if (task) {
-      if (task.status === 'running') return;
-      await this.executeTask(task, 0, true);
+    if (!task) return;
+    if (task.status === 'running') return;
+    
+    const previousStatus = task.status;
+    
+    task.status = 'running';
+    task.lastRun = Date.now();
+    task.executionCount = (task.executionCount || 0) + 1;
+    const startTime = Date.now();
+
+    this.log(`Triggering task: ${task.id}`);
+    this.emit('task_started', { taskId: task.id, task });
+    this.notify();
+
+    try {
+      await task.handler();
+      
+      const duration = Date.now() - startTime;
+      this.recordHistory(task, {
+        timestamp: startTime,
+        duration,
+        success: true,
+      });
+      
+      // 恢复到之前的状态
+      task.status = previousStatus;
+      this.log(`Task trigger success: ${task.id}`);
+      this.emit('task_completed', { taskId: task.id, task, duration });
+      this.notify();
+
+    } catch (err: any) {
+      const duration = Date.now() - startTime;
+      this.recordHistory(task, {
+        timestamp: startTime,
+        duration,
+        success: false,
+        error: err.message,
+      });
+
+      this.log(`Task trigger failed: ${task.id} - ${err.message}`);
+      this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
+      
+      // 恢复到之前的状态
+      task.status = previousStatus;
+      this.notify();
     }
   }
 

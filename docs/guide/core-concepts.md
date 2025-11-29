@@ -1,297 +1,220 @@
 # 核心概念
 
-本文将帮助你深入理解 Hyper Scheduler 的设计理念和核心机制。
+## 调度器 (Scheduler)
 
-## 什么是调度器？
+调度器是系统的核心控制器，负责：
 
-想象一下，你需要在应用中定期执行一些任务：
-- 每 30 秒检查一次服务器状态
-- 每天凌晨 2 点备份数据
-- 每 5 分钟同步用户数据
+- 任务注册与管理
+- 时间循环维护
+- 任务触发与执行
+- 状态跟踪
 
-**调度器（Scheduler）** 就是帮你自动管理这些定时任务的工具。你只需要告诉它"什么时候"和"做什么"，它会在正确的时间自动执行。
-
-### 调度器的职责
-
-`Scheduler` 是整个系统的核心控制器，它负责：
-
-1. **管理任务**: 注册、删除、查询任务
-2. **计时循环**: 维护精确的时间循环
-3. **触发执行**: 在正确的时间点调用任务处理器
-4. **状态管理**: 跟踪每个任务的运行状态
-
-### 使用建议
-
-- **单实例**: 通常一个应用只需要一个 `Scheduler` 实例
-- **多实例**: 如果需要隔离不同类型的任务（如前台任务和后台任务），可以创建多个实例
-- **生命周期**: 使用 `start()` 启动，`stop()` 停止
+### 生命周期
 
 ```typescript
-const scheduler = new Scheduler({ debug: true });
-scheduler.start(); // 开始调度
-// ... 应用运行中
-scheduler.stop();  // 停止调度
+const scheduler = new Scheduler();
+
+// 注册任务
+scheduler.createTask({ ... });
+
+// 启动调度
+scheduler.start();
+
+// 停止调度
+scheduler.stop();
 ```
+
+### 配置项
+
+| 参数 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `debug` | `boolean` | `false` | 启用调试日志 |
+| `timezone` | `string` | 系统时区 | 全局时区 |
+| `maxHistory` | `number` | `50` | 历史记录上限 |
 
 ---
 
 ## 任务 (Task)
 
-任务是调度的基本单元。每个任务就像一个"定时提醒"，包含三个核心要素：
+任务是调度的基本单元，包含三个核心要素：
 
-### 1. ID - 任务的身份证
+### ID
 
-每个任务都需要一个唯一的 ID，就像身份证号一样。
+任务的唯一标识符，用于查询、触发、停止等操作。
 
-```typescript
-{
-  id: 'sync-user-data', // 唯一标识
-  // ...
-}
-```
+### Schedule
 
-**用途**:
-- 查询任务状态
-- 手动触发任务
-- 停止或删除任务
+调度规则，支持两种格式：
 
-### 2. Schedule - 何时执行
-
-定义任务的执行时间规则，支持两种方式（详见下文）。
-
-### 3. Handler - 做什么
-
-任务触发时执行的函数，支持同步和异步。
-
-```typescript
-{
-  handler: async () => {
-    await fetchData();
-    console.log('数据同步完成');
-  }
-}
-```
-
-### 任务状态
-
-每个任务都有一个状态，表示当前的运行情况：
-
-| 状态 | 说明 | 何时出现 |
-|------|------|----------|
-| `idle` | 空闲 | 等待下次调度 |
-| `running` | 运行中 | 正在执行 handler |
-| `stopped` | 已停止 | 被手动停止，不会再调度 |
-| `error` | 错误 | 执行失败 |
-
----
-
-## 调度规则 (Schedule)
-
-调度规则决定了任务"何时"执行。Hyper Scheduler 提供两种灵活的方式：
-
-### 方式 1: Cron 表达式
-
-适合**基于时间点**的任务，如"每天 8 点"、"每周一"。
-
-#### 格式
+**Cron 表达式**
 
 ```
 秒 分 时 日 月 周
-*  *  *  *  *  *
 ```
 
-#### 常用示例
-
-```typescript
-// 每分钟执行
-schedule: '0 * * * * *'
-
-// 每天上午 8:30
-schedule: '0 30 8 * * *'
-
-// 每周一上午 9:00
-schedule: '0 0 9 * * 1'
-
-// 每月 1 号凌晨 2:00
-schedule: '0 0 2 1 * *'
-
-// 每 5 秒执行
-schedule: '*/5 * * * * *'
-```
-
-#### 字段说明
-
-| 字段 | 允许值 | 特殊字符 |
-|------|--------|----------|
+| 字段 | 取值范围 | 特殊字符 |
+|------|----------|----------|
 | 秒 | 0-59 | `*` `,` `-` `/` |
 | 分 | 0-59 | `*` `,` `-` `/` |
 | 时 | 0-23 | `*` `,` `-` `/` |
-| 日 | 1-31 | `*` `,` `-` `/` `?` |
+| 日 | 1-31 | `*` `,` `-` `/` |
 | 月 | 1-12 | `*` `,` `-` `/` |
-| 周 | 0-7 (0和7都是周日) | `*` `,` `-` `/` `?` |
+| 周 | 0-7 | `*` `,` `-` `/` |
 
-**特殊字符**:
-- `*`: 任意值
-- `,`: 列举多个值，如 `1,3,5`
-- `-`: 范围，如 `1-5`
-- `/`: 步长，如 `*/5` 表示每 5 个单位
+特殊字符说明：
+- `*` - 任意值
+- `,` - 列举值，如 `1,3,5`
+- `-` - 范围，如 `1-5`
+- `/` - 步长，如 `*/5`
 
-### 方式 2: 时间间隔
+**时间间隔**
 
-适合**周期性**任务，如"每 30 秒"、"每 5 分钟"。
+| 单位 | 示例 |
+|------|------|
+| `s` | `30s` - 每 30 秒 |
+| `m` | `5m` - 每 5 分钟 |
+| `h` | `2h` - 每 2 小时 |
+| `d` | `1d` - 每天 |
 
-#### 格式
+### Handler
 
-```
-数字 + 单位
-```
-
-#### 支持的单位
-
-| 单位 | 说明 | 示例 |
-|------|------|------|
-| `s` | 秒 | `30s` = 每 30 秒 |
-| `m` | 分钟 | `5m` = 每 5 分钟 |
-| `h` | 小时 | `2h` = 每 2 小时 |
-| `d` | 天 | `1d` = 每天 |
-
-#### 示例
+任务执行函数，支持同步和异步：
 
 ```typescript
-// 每 10 秒
-schedule: '10s'
+// 同步
+handler: () => {
+  console.log('executed');
+}
 
-// 每 5 分钟
-schedule: '5m'
-
-// 每 2 小时
-schedule: '2h'
-
-// 每天
-schedule: '1d'
+// 异步
+handler: async () => {
+  await fetchData();
+}
 ```
-
-### 如何选择？
-
-| 场景 | 推荐方式 | 原因 |
-|------|----------|------|
-| 固定时间点 | Cron 表达式 | 如"每天 8 点"、"每周一" |
-| 固定间隔 | 时间间隔 | 更简洁直观 |
-| 复杂规则 | Cron 表达式 | 支持更灵活的组合 |
 
 ---
 
-## 计时策略 (Timer Strategy)
+## 任务状态
 
-Hyper Scheduler 会根据运行环境自动选择最佳的计时策略。
+| 状态 | 说明 |
+|------|------|
+| `stopped` | 已停止，不参与调度 |
+| `idle` | 等待调度，将在下次触发时间执行 |
+| `running` | 正在执行 |
+| `error` | 执行出错 |
 
-### Node.js 环境
+状态流转：
 
-使用 **NodeTimer** 策略：
-- 基于 `setTimeout` 和 `setInterval`
-- 结合 `process.hrtime` 实现高精度计时
-- 适合服务器端长期运行
+```
+stopped -> idle -> running -> idle
+                      |
+                      v
+                    error -> idle (重试) 或 error (放弃)
+```
 
-### 浏览器环境
+---
 
-使用 **BrowserTimer** 策略：
-- 优先使用 **Web Worker** 运行计时循环
-- 解决浏览器标签页后台节流问题
-- 确保任务准时执行
+## 计时策略
 
-#### 为什么需要 Web Worker？
+调度器根据运行环境自动选择计时策略：
 
-浏览器有一个"节能"机制：当标签页切换到后台时，会将 `setTimeout` 的最小间隔限制为 1 秒甚至更长。这会导致定时任务延迟。
+### Node.js
 
-**Web Worker 的优势**:
-- 运行在独立线程，不受主线程影响
-- 后台优先级更高，不会被节流
-- 保证任务准时触发
+使用 `setTimeout` + `process.hrtime` 实现高精度计时。
+
+### 浏览器
+
+优先使用 Web Worker 运行计时循环，避免后台标签页节流问题。
+
+浏览器在标签页切换到后台时会限制 `setTimeout` 最小间隔为 1 秒，Web Worker 不受此限制。
+
+---
+
+## 重试机制
+
+任务执行失败时可自动重试：
 
 ```typescript
-// 浏览器环境自动使用 Web Worker
-const scheduler = new Scheduler();
 scheduler.createTask({
-  id: 'heartbeat',
-  schedule: '5s', // 即使在后台也能准时执行
-  handler: () => console.log('心跳')
+  id: 'api-call',
+  schedule: '1m',
+  handler: async () => {
+    await callAPI();
+  },
+  options: {
+    retry: {
+      maxAttempts: 3,    // 最大重试次数
+      initialDelay: 1000, // 首次重试延迟 (ms)
+      factor: 2          // 延迟递增因子
+    }
+  }
 });
 ```
 
+重试延迟计算：`initialDelay * (factor ^ attempt)`
+
+示例（initialDelay=1000, factor=2）：
+- 第 1 次重试：1000ms
+- 第 2 次重试：2000ms
+- 第 3 次重试：4000ms
+
 ---
 
-## 任务标签 (Tags)
+## 任务标签
 
-标签用于给任务分类，方便管理和过滤。
+标签用于任务分类和过滤：
 
 ```typescript
 scheduler.createTask({
   id: 'sync-orders',
   schedule: '1m',
-  tags: ['sync', 'important', 'orders'],
+  tags: ['sync', 'orders', 'critical'],
   handler: async () => {
     await syncOrders();
   }
 });
 ```
 
-**用途**:
-- 在 DevTools 中按标签过滤任务
-- 批量操作同类任务
-- 提高代码可读性
-
----
-
-## 重试机制
-
-任务执行失败时，可以自动重试。
-
-```typescript
-scheduler.createTask({
-  id: 'api-call',
-  schedule: '30s',
-  handler: async () => {
-    await callAPI();
-  },
-  options: {
-    retry: {
-      maxAttempts: 3,  // 最多重试 3 次
-      delay: 5000      // 每次重试间隔 5 秒
-    }
-  }
-});
-```
-
-**重试流程**:
-1. 任务执行失败
-2. 等待 `delay` 毫秒
-3. 重新执行
-4. 重复直到成功或达到 `maxAttempts`
+在 DevTools 中可按标签搜索过滤任务。
 
 ---
 
 ## 执行历史
 
-每个任务都会记录最近的执行历史，包括：
-- 执行时间
-- 执行耗时
-- 成功/失败状态
-- 错误信息（如果失败）
+每个任务记录最近的执行历史：
 
 ```typescript
-const task = scheduler.getTask('sync-data');
-console.log(task.history); // 最近 50 条记录（默认）
+interface ExecutionRecord {
+  timestamp: number;  // 执行时间戳
+  duration: number;   // 执行耗时 (ms)
+  success: boolean;   // 是否成功
+  error?: string;     // 错误信息
+}
 ```
 
-**用途**:
-- 调试任务问题
-- 分析任务性能
-- 在 DevTools 中查看详细历史
+通过 `maxHistory` 配置控制保留数量，默认 50 条。
 
 ---
 
-## 下一步
+## 事件系统
 
-- 查看 [API 文档](../api/scheduler.md) 了解完整的方法列表
-- 尝试 [快速开始](./getting-started.md) 中的示例
-- 使用 DevTools 可视化调试任务
+调度器支持事件订阅：
+
+```typescript
+// 订阅
+const unsubscribe = scheduler.on('task_completed', (payload) => {
+  console.log(`${payload.taskId} completed`);
+});
+
+// 取消订阅
+unsubscribe();
+```
+
+| 事件 | 触发时机 |
+|------|----------|
+| `task_registered` | 任务注册 |
+| `task_started` | 开始执行 |
+| `task_completed` | 执行成功 |
+| `task_failed` | 执行失败 |
+| `task_stopped` | 任务停止 |
+| `task_removed` | 任务删除 |

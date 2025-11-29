@@ -1,6 +1,7 @@
 import { themeStyles } from '../styles/theme.css';
 import { TaskSnapshot, ExecutionRecord } from '../../types';
 import { t } from '../i18n';
+import { ICONS } from './icons';
 
 export class TaskDetail extends HTMLElement {
   private _shadow: ShadowRoot;
@@ -59,8 +60,8 @@ export class TaskDetail extends HTMLElement {
 
     container.innerHTML = `
       <div class="header">
-        <button class="back-btn">⬅️ ${t('detail.back')}</button>
-        <h2>${task.id}</h2>
+        <button class="back-btn" title="${t('detail.back')}">${ICONS.back}</button>
+        <h2>📂 ${task.id}</h2>
       </div>
       
       <div class="section">

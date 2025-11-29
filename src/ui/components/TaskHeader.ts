@@ -59,7 +59,10 @@ export class TaskHeader extends HTMLElement {
 
   set dockPosition(val: 'right' | 'bottom') {
     if (this.$dockIcon) {
-      this.$dockIcon.innerHTML = val === 'right' ? ICONS.dockBottom : ICONS.dock;
+      // 显示目标位置的图标（点击后切换到的位置）
+      // right -> 显示 dock (底部图标)，表示可以切换到底部
+      // bottom -> 显示 dockRight (右侧图标)，表示可以切换到右侧
+      this.$dockIcon.innerHTML = val === 'right' ? ICONS.dock : ICONS.dockRight;
       this.$dockIcon.parentElement?.setAttribute('title', t('header.toggleDock'));
     }
   }
@@ -131,7 +134,8 @@ export class TaskHeader extends HTMLElement {
   private updateTexts() {
     if (this.$title) this.$title.innerHTML = `🕒 ${t('header.title')}`;
     if (this.$searchInput) this.$searchInput.placeholder = t('header.searchPlaceholder');
-    if (this.$langBtn) this.$langBtn.textContent = this._language === 'en' ? 'EN' : '中';
+    // 显示目标语言（点击后切换到的语言）
+    if (this.$langBtn) this.$langBtn.textContent = this._language === 'en' ? '中' : 'EN';
     
     this.$tabs.forEach(tab => {
       const key = tab.dataset.tab;
@@ -196,7 +200,8 @@ export class TaskHeader extends HTMLElement {
         }
         .controls {
           display: flex;
-          gap: 8px;
+          align-items: center;
+          gap: 4px;
         }
         button {
           background: transparent;
@@ -207,7 +212,10 @@ export class TaskHeader extends HTMLElement {
           border-radius: 4px;
           display: flex;
           align-items: center;
+          justify-content: center;
           font-size: 12px;
+          width: 28px;
+          height: 28px;
         }
         button:hover {
           background: var(--hs-bg-secondary);
@@ -219,8 +227,6 @@ export class TaskHeader extends HTMLElement {
         }
         .lang-btn {
           font-weight: 600;
-          width: 24px;
-          justify-content: center;
         }
         .stats-bar {
           display: flex;
