@@ -2,7 +2,7 @@ import { defineConfig } from 'vitepress';
 
 export default defineConfig({
   lang: 'zh-CN', // 设置语言为中文
-  title: 'Hyper 调度器', // 更新标题
+  title: 'Hyper Scheduler', // 更新标题
   description: '轻量级全局任务调度 JavaScript 库。', // 更新描述
   themeConfig: {
     nav: [
