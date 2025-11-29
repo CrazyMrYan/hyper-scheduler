@@ -20,7 +20,7 @@ export class DevTools implements HyperSchedulerPlugin {
   private async mount(scheduler: Scheduler): Promise<void> {
     try {
       // Import the UI component definition (side effect: defines <hs-devtools>)
-      await import('../ui/components/DevTools');
+      await import('../ui/components/devtools');
       
       // Check DOM
       let el = document.querySelector('hs-devtools') as any;
