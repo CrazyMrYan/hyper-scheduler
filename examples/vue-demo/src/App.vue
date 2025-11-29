@@ -13,10 +13,10 @@ const addLog = (msg: string) => {
 }
 
 onMounted(() => {
-  // 创建调度器
+  // 创建调度器 - DevTools 仅在开发环境加载
   scheduler.value = new Scheduler({ 
     debug: true,
-    plugins: [...import.meta.env.DEV ? [new DevTools({ theme: 'auto', language: 'zh' })] : []]
+    plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
   })
   
   // Cron 任务 - 每 3 秒

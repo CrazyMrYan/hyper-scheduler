@@ -22,13 +22,18 @@ export default defineConfig({
         text: '指南',
         items: [
           { text: '快速开始', link: '/guide/getting-started' },
-          { text: '核心概念', link: '/guide/core-concepts' }
+          { text: '核心概念', link: '/guide/core-concepts' },
+          { text: '最佳实践', link: '/guide/best-practices' }
         ]
       },
       {
         text: 'API 参考',
         items: [
-          { text: 'Scheduler', link: '/api/scheduler' }
+          { text: '总览', link: '/api/' },
+          { text: 'Scheduler', link: '/api/scheduler' },
+          { text: 'Task', link: '/api/task' },
+          { text: 'DevTools', link: '/api/devtools' },
+          { text: '类型定义', link: '/api/types' }
         ]
       }
     ]

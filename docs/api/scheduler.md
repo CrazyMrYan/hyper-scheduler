@@ -1,25 +1,25 @@
-# Scheduler API
-
-## Scheduler
+# Scheduler
 
 核心调度器类，负责任务的注册、调度和生命周期管理。
 
-### 构造函数
+## 构造函数
 
 ```typescript
 new Scheduler(config?: SchedulerConfig)
 ```
 
-**参数**
+### 参数
 
-| 参数 | 类型 | 默认值 | 说明 |
+- **config** `SchedulerConfig` - 可选配置对象
+
+| 属性 | 类型 | 默认值 | 说明 |
 |------|------|--------|------|
-| `config.debug` | `boolean` | `false` | 启用调试日志输出 |
-| `config.timezone` | `string` | 系统时区 | 全局时区设置，如 `'Asia/Shanghai'` |
-| `config.maxHistory` | `number` | `50` | 每个任务保留的最大执行历史记录数 |
-| `config.plugins` | `HyperSchedulerPlugin[]` | `-` | 要在初始化时加载的插件实例数组 |
+| `debug` | `boolean` | `false` | 启用调试日志输出 |
+| `timezone` | `string` | 系统时区 | 全局时区设置，如 `'Asia/Shanghai'` |
+| `maxHistory` | `number` | `50` | 每个任务保留的最大执行历史记录数 |
+| `plugins` | `HyperSchedulerPlugin[]` | `[]` | 要在初始化时加载的插件实例数组 |
 
-**示例**
+### 示例
 
 ```typescript
 import { Scheduler, DevTools } from 'hyper-scheduler';
@@ -34,45 +34,31 @@ const scheduler = new Scheduler({
 });
 ```
 
----
+## 实例方法
 
-### 方法
+### createTask()
 
-#### createTask
-
-注册新任务。
+注册新任务到调度器。
 
 ```typescript
 createTask(definition: TaskDefinition): void
 ```
 
-**参数**
+#### 参数
 
-| 参数 | 类型 | 必填 | 说明 |
+- **definition** `TaskDefinition` - 任务定义对象
+
+| 属性 | 类型 | 必填 | 说明 |
 |------|------|------|------|
-| `definition.id` | `string` | ✓ | 任务唯一标识符 |
-| `definition.schedule` | `string` | ✓ | 调度规则（Cron 表达式或时间间隔） |
-| `definition.handler` | `() => void \| Promise<void>` | ✓ | 任务执行函数 |
-| `definition.tags` | `string[]` | - | 任务标签，用于分类过滤 |
-| `definition.options` | `TaskOptions` | - | 任务选项 |
+| `id` | `string` | ✓ | 任务唯一标识符 |
+| `schedule` | `string` | ✓ | 调度规则（Cron 表达式或时间间隔） |
+| `handler` | `() => void \| Promise<void>` | ✓ | 任务执行函数 |
+| `tags` | `string[]` | - | 任务标签，用于分类过滤 |
+| `options` | `TaskOptions` | - | 任务选项 |
 
-**TaskOptions**
+详细的 `TaskOptions` 配置请参考 [Task API](./task.md)。
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `retry` | `RetryConfig` | - | 重试配置 |
-| `timezone` | `string` | - | 任务专属时区，覆盖全局设置 |
-| `onError` | `(error: Error, taskId: string) => void` | - | 错误处理回调函数 |
-
-**RetryConfig**
-
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `maxAttempts` | `number` | - | 最大重试次数 |
-| `initialDelay` | `number` | - | 首次重试延迟（毫秒） |
-| `factor` | `number` | `2` | 延迟递增因子（指数退避） |
-
-**示例**
+#### 示例
 
 ```typescript
 // 基础任务
@@ -96,38 +82,16 @@ scheduler.createTask({
     retry: {
       maxAttempts: 3,
       initialDelay: 1000,
-      factor: 2  // 重试延迟: 1s, 2s, 4s
+      factor: 2
     },
     onError: (error, taskId) => {
       console.error(`Task ${taskId} failed:`, error.message);
-      // 发送告警通知
-      sendAlert(taskId, error);
     }
   }
 });
 ```
 
----
-
-#### deleteTask
-
-删除指定任务。
-
-```typescript
-deleteTask(taskId: string): boolean
-```
-
-**参数**
-
-| 参数 | 类型 | 说明 |
-|------|------|------|
-| `taskId` | `string` | 任务 ID |
-
-**返回值**: `boolean` - 删除成功返回 `true`
-
----
-
-#### start
+### start()
 
 启动调度器，开始执行所有已注册的任务。
 
@@ -135,19 +99,27 @@ deleteTask(taskId: string): boolean
 start(): void
 ```
 
----
+#### 示例
 
-#### stop
+```typescript
+scheduler.start();
+```
 
-停止调度器，暂停所有任务的调度。
+### stop()
+
+停止调度器，暂停所有任务的调度。已经在执行的任务会继续完成。
 
 ```typescript
 stop(): void
 ```
 
----
+#### 示例
 
-#### startTask
+```typescript
+scheduler.stop();
+```
+
+### startTask()
 
 启动指定任务（从 stopped 状态恢复）。
 
@@ -155,19 +127,35 @@ stop(): void
 startTask(taskId: string): void
 ```
 
----
+#### 参数
 
-#### stopTask
+- **taskId** `string` - 任务 ID
 
-停止指定任务。
+#### 示例
+
+```typescript
+scheduler.startTask('daily-backup');
+```
+
+### stopTask()
+
+停止指定任务，任务状态变为 `stopped`，不再参与调度。
 
 ```typescript
 stopTask(taskId: string): void
 ```
 
----
+#### 参数
 
-#### triggerTask
+- **taskId** `string` - 任务 ID
+
+#### 示例
+
+```typescript
+scheduler.stopTask('daily-backup');
+```
+
+### triggerTask()
 
 手动触发任务立即执行一次，不影响正常调度。执行完成后恢复到之前的状态。
 
@@ -175,175 +163,144 @@ stopTask(taskId: string): void
 triggerTask(taskId: string): Promise<void>
 ```
 
----
+#### 参数
 
-#### getTask
+- **taskId** `string` - 任务 ID
 
-获取任务详情。
+#### 返回值
+
+- `Promise<void>` - 任务执行完成后 resolve
+
+#### 示例
+
+```typescript
+await scheduler.triggerTask('daily-backup');
+console.log('Manual trigger completed');
+```
+
+### deleteTask()
+
+删除指定任务，任务将从调度器中移除。
+
+```typescript
+deleteTask(taskId: string): boolean
+```
+
+#### 参数
+
+- **taskId** `string` - 任务 ID
+
+#### 返回值
+
+- `boolean` - 删除成功返回 `true`，任务不存在返回 `false`
+
+#### 示例
+
+```typescript
+const deleted = scheduler.deleteTask('old-task');
+if (deleted) {
+  console.log('Task removed successfully');
+}
+```
+
+### getTask()
+
+获取指定任务的详细信息。
 
 ```typescript
 getTask(taskId: string): Task | undefined
 ```
 
-**返回值**: `Task` 对象或 `undefined`
+#### 参数
 
----
+- **taskId** `string` - 任务 ID
 
-#### getAllTasks
+#### 返回值
 
-获取所有任务列表。
+- `Task | undefined` - 任务对象，不存在则返回 `undefined`
+
+#### 示例
+
+```typescript
+const task = scheduler.getTask('daily-backup');
+if (task) {
+  console.log('Task status:', task.status);
+  console.log('Next run:', new Date(task.nextRun));
+}
+```
+
+### getAllTasks()
+
+获取所有已注册任务的列表。
 
 ```typescript
 getAllTasks(): Task[]
 ```
 
----
+#### 返回值
 
-#### on
+- `Task[]` - 任务对象数组
 
-订阅事件。
+#### 示例
+
+```typescript
+const tasks = scheduler.getAllTasks();
+console.log(`Total tasks: ${tasks.length}`);
+
+tasks.forEach(task => {
+  console.log(`${task.id}: ${task.status}`);
+});
+```
+
+### on()
+
+订阅调度器事件。
 
 ```typescript
 on(event: string, handler: (payload: any) => void): () => void
 ```
 
-**事件类型**
+#### 参数
 
-| 事件 | 触发时机 | payload |
-|------|----------|---------|
-| `task_registered` | 任务注册 | `{ taskId, task }` |
-| `task_started` | 任务开始执行 | `{ taskId, task }` |
-| `task_completed` | 任务执行成功 | `{ taskId, task, duration }` |
-| `task_failed` | 任务执行失败 | `{ taskId, task, error, duration }` |
-| `task_stopped` | 任务停止 | `{ taskId, task }` |
-| `task_removed` | 任务删除 | `{ taskId }` |
+- **event** `string` - 事件名称
+- **handler** `(payload: any) => void` - 事件处理函数
 
-**返回值**: 取消订阅函数
+#### 返回值
 
-**示例**
+- `() => void` - 取消订阅函数
+
+#### 支持的事件
+
+| 事件名 | 触发时机 | payload 结构 |
+|--------|----------|--------------|
+| `task_registered` | 任务注册时 | `{ taskId: string, task: Task }` |
+| `task_started` | 任务开始执行时 | `{ taskId: string, task: Task }` |
+| `task_completed` | 任务执行成功时 | `{ taskId: string, task: Task, duration: number }` |
+| `task_failed` | 任务执行失败时 | `{ taskId: string, task: Task, error: Error, duration: number }` |
+| `task_stopped` | 任务停止时 | `{ taskId: string, task: Task }` |
+| `task_removed` | 任务删除时 | `{ taskId: string }` |
+
+#### 示例
 
 ```typescript
+// 订阅任务完成事件
 const unsubscribe = scheduler.on('task_completed', ({ taskId, duration }) => {
   console.log(`Task ${taskId} completed in ${duration}ms`);
+});
+
+// 订阅任务失败事件
+scheduler.on('task_failed', ({ taskId, error }) => {
+  console.error(`Task ${taskId} failed:`, error.message);
+  // 发送告警通知
+  sendAlert(taskId, error);
 });
 
 // 取消订阅
 unsubscribe();
 ```
 
----
+## 相关链接
 
-
-
-## 类型定义
-
-### SchedulerConfig
-
-```typescript
-interface SchedulerConfig {
-  debug?: boolean;
-  timezone?: string;
-  maxHistory?: number;
-}
-```
-
-### TaskDefinition
-
-```typescript
-interface TaskDefinition {
-  id: string;
-  schedule: string;
-  handler: () => void | Promise<void>;
-  tags?: string[];
-  options?: TaskOptions;
-}
-```
-
-### TaskOptions
-
-```typescript
-interface TaskOptions {
-  retry?: {
-    maxAttempts: number;
-    initialDelay: number;
-    factor?: number;
-  };
-  timezone?: string;
-  onError?: (error: Error, taskId: string) => void;
-}
-```
-
-### Task
-
-```typescript
-interface Task extends TaskDefinition {
-  status: TaskStatus;
-  lastRun?: number;
-  nextRun?: number;
-  executionCount?: number;
-  history: ExecutionRecord[];
-}
-```
-
-### TaskStatus
-
-```typescript
-type TaskStatus = 'idle' | 'running' | 'stopped' | 'error';
-```
-
-| 状态 | 说明 |
-|------|------|
-| `stopped` | 已停止，不参与调度 |
-| `idle` | 等待调度 |
-| `running` | 正在执行 |
-| `error` | 执行出错 |
-
-### ExecutionRecord
-
-```typescript
-interface ExecutionRecord {
-  timestamp: number;
-  duration: number;
-  success: boolean;
-  error?: string;
-}
-```
-
-### DevToolsOptions
-
-```typescript
-interface DevToolsOptions {
-  theme?: 'light' | 'dark' | 'auto';
-  dockPosition?: 'right' | 'bottom';
-  language?: 'en' | 'zh';
-  defaultZoom?: number;
-  trigger?: {
-    backgroundColor?: string;
-    textColor?: string;
-    position?: 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left';
-  };
-}
-```
-
-### HyperSchedulerPlugin
-
-调度器插件接口。
-
-```typescript
-interface HyperSchedulerPlugin {
-  name: string;
-  init(scheduler: Scheduler, options?: any): void;
-}
-```
-
-### DevTools
-
-DevTools 插件类，实现了 `HyperSchedulerPlugin` 接口。
-
-```typescript
-class DevTools implements HyperSchedulerPlugin {
-  name: 'DevTools';
-  constructor(options?: DevToolsOptions);
-  init(scheduler: Scheduler): void;
-}
-```
+- [Task API](./task.md) - 任务配置详解
+- [DevTools API](./devtools.md) - 调试工具配置
+- [类型定义](./types.md) - 完整类型定义
