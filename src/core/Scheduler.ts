@@ -92,7 +92,8 @@ export class Scheduler {
     const task: Task = {
       ...definition,
       tags: definition.tags || [],
-      status: 'idle',
+      // 新创建的任务默认是 stopped 状态，需要手动启动或等调度器启动
+      status: 'stopped',
       history: [],
       executionCount: 0,
     };
@@ -102,7 +103,9 @@ export class Scheduler {
     this.emit('task_registered', { taskId: task.id, task });
     this.notify();
 
+    // 如果调度器已经在运行，自动启动新任务
     if (this.running) {
+      task.status = 'idle';
       this.scheduleTask(task);
     }
   }
@@ -125,6 +128,7 @@ export class Scheduler {
 
   /**
    * 手动启动一个任务（将其置为 idle 状态并重新加入调度）。
+   * 即使调度器未启动，也可以单独启动某个任务。
    * @param id 任务 ID
    */
   startTask(id: string): void {
@@ -133,15 +137,119 @@ export class Scheduler {
       throw new Error(`Task not found: ${id}`);
     }
 
-    if (task.status === 'running' || this.timers.has(id)) {
-      return; // Already running or scheduled
+    if (task.status === 'running') {
+      return; // Already running
+    }
+
+    // Cancel existing timer if any
+    const existingHandle = this.timers.get(id);
+    if (existingHandle) {
+      this.timerStrategy.cancel(existingHandle);
+      this.timers.delete(id);
     }
 
     task.status = 'idle'; // Reset status if it was stopped or error
     this.log(`Starting task: ${id}`);
-    this.emit('task_updated', { taskId: id, task });
+    this.emit('task_started', { taskId: id, task });
     this.notify();
-    this.scheduleTask(task);
+    
+    // Schedule task even if scheduler is not running (individual task control)
+    this.scheduleTaskForce(task);
+  }
+  
+  /**
+   * 强制调度任务，即使调度器未启动
+   */
+  private scheduleTaskForce(task: Task): void {
+    try {
+      const nextRun = getNextScheduleRun(task.schedule, {
+        timezone: task.options?.timezone || this.config.timezone,
+        lastRun: task.lastRun,
+      });
+      task.nextRun = nextRun.getTime();
+
+      const now = Date.now();
+      const delay = Math.max(0, nextRun.getTime() - now);
+
+      this.log(`Scheduling task ${task.id} for ${nextRun.toISOString()} (in ${delay}ms)`);
+
+      const handle = this.timerStrategy.schedule(() => {
+        this.executeTaskIndividual(task);
+      }, delay);
+
+      this.timers.set(task.id, handle);
+    } catch (err) {
+      this.log(`Error scheduling task ${task.id}: ${err}`);
+      task.status = 'error';
+      this.notify();
+    }
+  }
+  
+  /**
+   * 执行单个任务（用于独立启动的任务）
+   */
+  private async executeTaskIndividual(task: Task, attempt: number = 0): Promise<void> {
+    this.timers.delete(task.id);
+
+    // Check if task was stopped
+    if (task.status === 'stopped') return;
+
+    task.status = 'running';
+    task.lastRun = Date.now();
+    task.executionCount = (task.executionCount || 0) + 1;
+    const startTime = Date.now();
+
+    this.log(`Executing task: ${task.id} (Attempt ${attempt})`);
+    this.emit('task_started', { taskId: task.id, task });
+    this.notify();
+
+    try {
+      await task.handler();
+      
+      const duration = Date.now() - startTime;
+      this.recordHistory(task, {
+        timestamp: startTime,
+        duration,
+        success: true,
+      });
+      
+      task.status = 'idle';
+      this.log(`Task execution success: ${task.id}`);
+      this.emit('task_completed', { taskId: task.id, task, duration });
+      this.notify();
+      
+      // Schedule next run
+      this.scheduleTaskForce(task);
+
+    } catch (err: any) {
+      const duration = Date.now() - startTime;
+      this.recordHistory(task, {
+        timestamp: startTime,
+        duration,
+        success: false,
+        error: err.message,
+      });
+
+      this.log(`Task execution failed: ${task.id} - ${err.message}`);
+      this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
+      
+      // Retry logic
+      const retryDelay = RetryStrategy.getDelay(attempt, task.options?.retry);
+      if (retryDelay >= 0) {
+        this.log(`Retrying task ${task.id} in ${retryDelay}ms (Attempt ${attempt + 1})`);
+        const handle = this.timerStrategy.schedule(() => {
+            this.executeTaskIndividual(task, attempt + 1);
+        }, retryDelay);
+        this.timers.set(task.id, handle);
+        task.status = 'error';
+        this.notify();
+      } else {
+        task.status = 'error';
+        this.notify();
+        // Schedule next regular run
+        this.scheduleTaskForce(task); 
+      }
+    }
   }
 
   /**
@@ -193,17 +301,24 @@ export class Scheduler {
 
   /**
    * 启动调度器。
-   * 开始处理所有非 stopped 状态的任务。
+   * 开始处理所有任务（除了手动停止的任务）。
    */
   start(): void {
     if (this.running) return;
     this.running = true;
     this.log('Scheduler started');
     this.registry.getAllTasks().forEach((task) => {
-      if (task.status !== 'stopped') {
+      // 启动所有 stopped 状态的任务（新创建的任务默认是 stopped）
+      if (task.status === 'stopped') {
+        task.status = 'idle';
+        this.emit('task_updated', { taskId: task.id, task });
+      }
+      // 调度所有非 running 状态的任务
+      if (task.status !== 'running') {
         this.scheduleTask(task);
       }
     });
+    this.notify();
   }
 
   /**

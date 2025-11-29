@@ -1,5 +1,6 @@
 import { themeStyles } from '../styles/theme.css';
 import { TaskSnapshot, ExecutionRecord } from '../../types';
+import { t } from '../i18n';
 
 export class TaskDetail extends HTMLElement {
   private _shadow: ShadowRoot;
@@ -20,8 +21,8 @@ export class TaskDetail extends HTMLElement {
     });
   }
 
-  set task(t: TaskSnapshot | null) {
-    this._task = t;
+  set task(task: TaskSnapshot | null) {
+    this._task = task;
     this.renderContent();
   }
 
@@ -30,21 +31,25 @@ export class TaskDetail extends HTMLElement {
     this.renderContent();
   }
 
+  // Method to update texts when language changes
+  updateTexts() {
+    this.renderContent();
+  }
+
   private renderContent() {
     const container = this._shadow.querySelector('.content');
     if (!container) return;
 
     if (!this._task) {
-      container.innerHTML = '<div class="empty">No task selected</div>';
+      container.innerHTML = `<div class="empty">${t('detail.noTask')}</div>`;
       return;
     }
 
-    const t = this._task;
+    const task = this._task;
     const config = {
-      id: t.id,
-      schedule: t.schedule,
-      tags: t.tags,
-      // other props
+      id: task.id,
+      schedule: task.schedule,
+      tags: task.tags,
     };
 
     // Calculate average duration
@@ -54,37 +59,37 @@ export class TaskDetail extends HTMLElement {
 
     container.innerHTML = `
       <div class="header">
-        <button class="back-btn">⬅️ Back</button>
-        <h2>📂 Task Details: ${t.id}</h2>
+        <button class="back-btn">⬅️ ${t('detail.back')}</button>
+        <h2>${task.id}</h2>
       </div>
       
       <div class="section">
-        <div class="config-label">Config:</div>
+        <div class="config-label">${t('detail.config')}:</div>
         <pre>${JSON.stringify(config, null, 2)}</pre>
       </div>
 
       <div class="section">
-        <h3>📜 Execution History (Last ${this._history.length} runs) ${avgDuration > 0 ? `- Avg Duration: ${avgDuration}ms` : ''}</h3>
+        <h3>📜 ${t('detail.history')} (${t('detail.lastRuns', { n: this._history.length })}) ${avgDuration > 0 ? `- ${t('detail.avgDuration')}: ${avgDuration}ms` : ''}</h3>
         <table class="history-table">
           <thead>
             <tr>
               <th>#</th>
-              <th>Start Time</th>
-              <th>Duration</th>
-              <th>Drift (偏差)</th>
-              <th>Status</th>
+              <th>${t('detail.startTime')}</th>
+              <th>${t('detail.duration')}</th>
+              <th>${t('detail.drift')}</th>
+              <th>${t('detail.status')}</th>
             </tr>
           </thead>
           <tbody>
-            ${this._history.length === 0 ? '<tr><td colspan="5" class="no-data">No execution history</td></tr>' : ''}
+            ${this._history.length === 0 ? `<tr><td colspan="5" class="no-data">${t('detail.noHistory')}</td></tr>` : ''}
             ${this._history.slice().reverse().map((run, idx) => {
               const drift = 0; // TODO: calculate drift from expected vs actual time
               const driftStr = drift > 0 ? `+${drift}ms` : drift < 0 ? `${drift}ms` : '0ms';
               const statusIcon = run.success 
-                ? '✅ Success' 
+                ? `✅ ${t('detail.success')}` 
                 : run.error 
-                  ? `❌ Error: ${run.error}` 
-                  : '⚠️ Failed';
+                  ? `❌ ${t('detail.error')}: ${run.error}` 
+                  : `⚠️ ${t('detail.failed')}`;
               const durationClass = run.duration > 100 ? 'slow' : '';
               
               return `

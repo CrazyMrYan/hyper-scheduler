@@ -58,7 +58,13 @@ export const en = {
     running: 'Running',
     paused: 'Paused',
     stopped: 'Stopped',
-    idle: 'Idle',
+    idle: 'Scheduled',
     error: 'Error'
+  },
+  actions: {
+    trigger: 'Trigger now',
+    start: 'Start task',
+    stop: 'Stop task',
+    remove: 'Remove task'
   }
 };

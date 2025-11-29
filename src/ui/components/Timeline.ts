@@ -1,5 +1,6 @@
 import { themeStyles } from '../styles/theme.css';
 import { TaskSnapshot, ExecutionRecord } from '../../types';
+import { t } from '../i18n';
 
 export class Timeline extends HTMLElement {
   private _shadow: ShadowRoot;
@@ -19,16 +20,29 @@ export class Timeline extends HTMLElement {
   connectedCallback() {
     this.render();
     this.$canvas = this._shadow.querySelector('canvas')!;
+    if (!this.$canvas) {
+      console.error('[Timeline] Canvas not found');
+      return;
+    }
+    
     this.ctx = this.$canvas.getContext('2d')!;
+    if (!this.ctx) {
+      console.error('[Timeline] Canvas context not available');
+      return;
+    }
+    
     this.setupZoom();
     this.startLoop();
     
-    // Add ResizeObserver
-    const resizeObserver = new ResizeObserver(() => {
-      // Trigger a redraw on next frame
-      this.draw();
-    });
-    resizeObserver.observe(this);
+    // Add ResizeObserver to canvas container
+    const container = this._shadow.querySelector('.canvas-container');
+    if (container) {
+      const resizeObserver = new ResizeObserver(() => {
+        // Trigger a redraw on next frame
+        requestAnimationFrame(() => this.draw());
+      });
+      resizeObserver.observe(container);
+    }
   }
 
   set data(val: { tasks: Map<string, TaskSnapshot>, history: Map<string, ExecutionRecord[]> }) {
@@ -36,27 +50,48 @@ export class Timeline extends HTMLElement {
     this._history = val.history;
   }
 
+  // Method to update texts when language changes
+  updateTexts() {
+    this.updateZoomLabel();
+  }
+
+  private updateZoomLabel() {
+    const zoomLabel = this._shadow.querySelector('.zoom-label');
+    if (zoomLabel) {
+      zoomLabel.textContent = `${t('timeline.zoom')}: ${this.zoom}x (${Math.round(this.timeRange / 1000)}s)`;
+    }
+  }
+
   private setupZoom() {
     const zoomSlider = this._shadow.querySelector('.zoom-slider') as HTMLInputElement;
     const zoomOut = this._shadow.querySelector('.zoom-out');
     const zoomIn = this._shadow.querySelector('.zoom-in');
     
-    zoomSlider?.addEventListener('input', (e) => {
-      this.zoom = parseFloat((e.target as HTMLInputElement).value);
+    const updateZoom = (newZoom: number) => {
+      this.zoom = newZoom;
       this.timeRange = 60 * 1000 / this.zoom;
+      this.updateZoomLabel();
+    };
+    
+    zoomSlider?.addEventListener('input', (e) => {
+      const newZoom = parseFloat((e.target as HTMLInputElement).value);
+      updateZoom(newZoom);
     });
     
     zoomOut?.addEventListener('click', () => {
-      this.zoom = Math.max(0.5, this.zoom - 0.5);
-      zoomSlider.value = this.zoom.toString();
-      this.timeRange = 60 * 1000 / this.zoom;
+      const newZoom = Math.max(0.5, this.zoom - 0.5);
+      if (zoomSlider) zoomSlider.value = newZoom.toString();
+      updateZoom(newZoom);
     });
     
     zoomIn?.addEventListener('click', () => {
-      this.zoom = Math.min(5, this.zoom + 0.5);
-      zoomSlider.value = this.zoom.toString();
-      this.timeRange = 60 * 1000 / this.zoom;
+      const newZoom = Math.min(5, this.zoom + 0.5);
+      if (zoomSlider) zoomSlider.value = newZoom.toString();
+      updateZoom(newZoom);
     });
+    
+    // Initial label update
+    this.updateZoomLabel();
   }
 
   private startLoop() {
@@ -72,21 +107,36 @@ export class Timeline extends HTMLElement {
   private draw() {
     if (!this.ctx || !this.$canvas) return;
     
+    // Get container size
+    const container = this._shadow.querySelector('.canvas-container') as HTMLElement;
+    if (!container) return;
+    
     const dpr = window.devicePixelRatio || 1;
-    const width = this.$canvas.clientWidth;
-    const height = this.$canvas.clientHeight;
+    const width = container.clientWidth;
     
-    if (width === 0 || height === 0) return;
+    if (width === 0) return;
     
+    // Calculate required height based on number of tasks
+    const rowHeight = 40;
+    const taskIds = Array.from(this._tasks.keys());
+    const headerHeight = 60;
+    const footerHeight = 40;
+    const minHeight = container.clientHeight || 300;
+    const contentHeight = taskIds.length * rowHeight + headerHeight + footerHeight;
+    const height = Math.max(minHeight, contentHeight);
+    
+    // Set canvas size - this resets the transform
     this.$canvas.width = width * dpr;
     this.$canvas.height = height * dpr;
-    this.ctx.scale(dpr, dpr);
+    this.$canvas.style.width = `${width}px`;
+    this.$canvas.style.height = `${height}px`;
+    
+    // Reset and apply scale (must be after setting canvas size)
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     
     const now = Date.now();
     const startTime = now - this.timeRange;
-    const rowHeight = 40;
     const labelWidth = 150;
-    const taskIds = Array.from(this._tasks.keys());
     
     // Get computed colors from host element
     const hostStyles = getComputedStyle(this);
@@ -145,7 +195,7 @@ export class Timeline extends HTMLElement {
     
     // Draw time range label
     ctx.textAlign = 'left';
-    ctx.fillText(`Time Range: Last ${Math.round(this.timeRange / 1000)}s`, 10, 15);
+    ctx.fillText(t('timeline.timeRange', { n: Math.round(this.timeRange / 1000) }), 10, 15);
   }
 
   private drawTaskRow(taskId: string, y: number, width: number, labelWidth: number, startTime: number, endTime: number, textColor: string, textSecondary: string, borderColor: string, successColor: string, dangerColor: string) {
@@ -207,7 +257,7 @@ export class Timeline extends HTMLElement {
     let x = 10;
     
     // Dot legend
-    ctx.fillText('Legend:', x, legendY);
+    ctx.fillText(`${t('timeline.legend')}:`, x, legendY);
     x += 50;
     
     ctx.fillStyle = successColor;
@@ -215,7 +265,7 @@ export class Timeline extends HTMLElement {
     ctx.arc(x, legendY - 4, 3, 0, Math.PI * 2);
     ctx.fill();
     ctx.fillStyle = textSecondary;
-    ctx.fillText('Instant', x + 10, legendY);
+    ctx.fillText(t('timeline.instant'), x + 10, legendY);
     x += 60;
     
     // Bar legend
@@ -224,13 +274,13 @@ export class Timeline extends HTMLElement {
     ctx.fillRect(x, legendY - 8, 15, 10);
     ctx.globalAlpha = 1;
     ctx.fillStyle = textSecondary;
-    ctx.fillText('Duration', x + 20, legendY);
+    ctx.fillText(t('timeline.duration'), x + 20, legendY);
     x += 80;
     
     // Driver legend
-    ctx.fillText('[W] Worker Driver', x, legendY);
+    ctx.fillText(`[W] ${t('timeline.workerDriver')}`, x, legendY);
     x += 110;
-    ctx.fillText('[M] Main Driver', x, legendY);
+    ctx.fillText(`[M] ${t('timeline.mainDriver')}`, x, legendY);
   }
 
   render() {
@@ -242,6 +292,7 @@ export class Timeline extends HTMLElement {
           flex-direction: column;
           height: 100%;
           background: var(--hs-bg);
+          overflow: hidden;
         }
         .controls {
           display: flex;
@@ -250,6 +301,7 @@ export class Timeline extends HTMLElement {
           padding: 12px 16px;
           gap: 8px;
           border-bottom: 1px solid var(--hs-border);
+          flex-shrink: 0;
         }
         .zoom-label {
           font-size: 11px;
@@ -274,9 +326,13 @@ export class Timeline extends HTMLElement {
         .zoom-slider {
           width: 100px;
         }
-        canvas {
+        .canvas-container {
           flex: 1;
-          width: 100%;
+          overflow: auto;
+          position: relative;
+        }
+        canvas {
+          display: block;
         }
       </style>
       <div class="controls">
@@ -285,7 +341,9 @@ export class Timeline extends HTMLElement {
         <input type="range" class="zoom-slider" min="0.5" max="5" step="0.5" value="1">
         <button class="zoom-btn zoom-in">+</button>
       </div>
-      <canvas></canvas>
+      <div class="canvas-container">
+        <canvas></canvas>
+      </div>
     `;
   }
 }

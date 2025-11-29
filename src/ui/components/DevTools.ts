@@ -238,16 +238,24 @@ export class DevTools extends HTMLElement {
     this.store.subscribe('dockPosition', (pos) => {
       this.$header.dockPosition = pos; 
       const size = this.store.getState().panelSize;
+      const isOpen = this.store.getState().isOpen;
+      
       if (pos === 'right') {
         this.$panel.classList.add('dock-right');
         this.$panel.classList.remove('dock-bottom');
         this.$panel.style.width = `${size.width}px`;
         this.$panel.style.height = '100vh';
+        // Clear bottom, set right
+        this.$panel.style.bottom = '';
+        this.$panel.style.right = isOpen ? '0' : `-${size.width}px`;
       } else {
         this.$panel.classList.add('dock-bottom');
         this.$panel.classList.remove('dock-right');
         this.$panel.style.width = '100%';
         this.$panel.style.height = `${size.height}px`;
+        // Clear right, set bottom
+        this.$panel.style.right = '';
+        this.$panel.style.bottom = isOpen ? '0' : `-${size.height}px`;
       }
     });
 
@@ -266,8 +274,12 @@ export class DevTools extends HTMLElement {
 
     this.store.subscribe('language', (lang) => {
       this.$header.language = lang;
-      // Force re-render list to update localized status
-      this.$taskList.tasks = this.store.getState().tasks;
+      // Update table headers for i18n
+      this.$taskList.updateHeaders();
+      // Update detail view if visible
+      this.$taskDetail.updateTexts?.();
+      // Update timeline if visible
+      this.$timeline.updateTexts?.();
     });
 
     this.store.subscribe('filterText', (text) => {
@@ -328,12 +340,19 @@ export class DevTools extends HTMLElement {
 
     this.$taskList.addEventListener('task-action', (e: Event) => {
       const { action, id } = (e as CustomEvent).detail;
+      console.log('[DevTools] task-action:', action, id);
       switch (action) {
-        case 'trigger': this.store.triggerTask(id); break;
-        case 'pause': this.store.pauseTask(id); break;
-        case 'resume': this.store.resumeTask(id); break;
+        case 'trigger': 
+          this.store.triggerTask(id); 
+          break;
+        case 'stop': 
+          this.store.stopTask(id); 
+          break;
+        case 'start': 
+          this.store.startTask(id); 
+          break;
         case 'remove': 
-          if (confirm(`Are you sure you want to remove task "${id}"?`)) {
+          if (confirm(`Remove task "${id}"?`)) {
             this.store.removeTask(id); 
           }
           break;
@@ -398,6 +417,12 @@ export class DevTools extends HTMLElement {
           flex: 1;
           overflow: hidden;
           position: relative;
+          display: flex;
+          flex-direction: column;
+        }
+        .content > * {
+          flex: 1;
+          min-height: 0;
         }
         @media (max-width: 480px) {
           .panel.dock-right {

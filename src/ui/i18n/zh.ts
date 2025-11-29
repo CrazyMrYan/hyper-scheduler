@@ -55,10 +55,16 @@ export const zh = {
     mainDriver: '主线程 驱动'
   },
   status: {
-    running: '运行中',
+    running: '执行中',
     paused: '已暂停',
     stopped: '已停止',
-    idle: '空闲',
+    idle: '调度中',
     error: '错误'
+  },
+  actions: {
+    trigger: '立即触发',
+    start: '启动任务',
+    stop: '停止任务',
+    remove: '删除任务'
   }
 };

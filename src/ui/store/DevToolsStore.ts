@@ -147,17 +147,17 @@ export class DevToolsStore {
     }
   }
 
-  pauseTask(id: string) {
-    console.log('[DevToolsStore] pauseTask called:', id);
+  stopTask(id: string) {
+    console.log('[DevToolsStore] stopTask:', id);
     if (this.scheduler) {
-      this.scheduler.pause(id);
+      this.scheduler.pause(id); // pause maps to stopTask in scheduler
     }
   }
 
-  resumeTask(id: string) {
-    console.log('[DevToolsStore] resumeTask called:', id);
+  startTask(id: string) {
+    console.log('[DevToolsStore] startTask:', id);
     if (this.scheduler) {
-      this.scheduler.resume(id);
+      this.scheduler.resume(id); // resume maps to startTask in scheduler
     }
   }
 

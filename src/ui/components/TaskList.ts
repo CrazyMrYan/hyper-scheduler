@@ -46,24 +46,53 @@ export class TaskList extends HTMLElement {
     this.renderRows();
   }
 
+  // Method to update table headers when language changes
+  updateHeaders() {
+    const thead = this._shadow.querySelector('thead');
+    if (thead) {
+      thead.innerHTML = `
+        <tr>
+          <th style="width:40px">#</th>
+          <th style="min-width:150px">${t('list.idTags')}</th>
+          <th style="width:100px">${t('list.status')}</th>
+          <th style="width:100px">${t('list.schedule')}</th>
+          <th style="width:60px">${t('list.count')}</th>
+          <th style="width:100px">${t('list.lastRun')}</th>
+          <th style="width:100px">${t('list.actions')}</th>
+        </tr>
+      `;
+    }
+    
+    // Update tip
+    const tip = this._shadow.querySelector('.tip');
+    if (tip) {
+      tip.textContent = t('list.tip');
+    }
+    
+    // Re-render rows to update status text
+    this.renderRows();
+  }
+
   private getStatusIcon(status: string, taskId: string) {
     const lastExec = this._lastExecutionTimes.get(taskId);
     const isRecentlyExecuted = lastExec && (Date.now() - lastExec < 1000);
     
+    // idle = 正在调度中（等待下次执行）
+    // running = 正在执行 handler
+    // stopped = 已停止，不会再调度（需要手动启动）
+    // error = 执行出错
     switch (status) {
       case 'running': 
-        return `<span style="color:var(--hs-success)">🟢</span> ${t('status.running')}`;
-      case 'paused': 
-        return `<span style="color:var(--hs-warning)">🟡</span> ${t('status.paused')}`;
+        return `<span style="color:var(--hs-primary)">🔵</span> <strong>${t('status.running')}</strong>`;
       case 'stopped': 
-        return `<span style="color:var(--hs-danger)">🔴</span> ${t('status.stopped')}`;
+        return `<span style="color:var(--hs-text-secondary)">⚪</span> ${t('status.stopped')}`;
       case 'idle': 
         if (isRecentlyExecuted) {
           return `<span class="status-flash" style="color:var(--hs-success)">🟢</span> ${t('status.idle')}`;
         }
-        return `<span style="color:var(--hs-text-secondary)">⚪</span> ${t('status.idle')}`;
+        return `<span style="color:var(--hs-success)">🟢</span> ${t('status.idle')}`;
       case 'error': 
-        return `<span style="color:var(--hs-danger)">🔴</span> ${t('status.error')}`;
+        return `<span style="color:var(--hs-warning)">🟠</span> ${t('status.error')}`;
       default: 
         return status;
     }
@@ -117,15 +146,12 @@ export class TaskList extends HTMLElement {
         <td>${this.formatTime(task.lastRun)}</td>
         <td class="col-actions">
           <div class="action-group">
-            <button class="btn-icon" data-action="trigger" title="Trigger now">${ICONS.trigger}</button>
-            ${task.status === 'running' 
-              ? `<button class="btn-icon" data-action="pause" title="Pause">${ICONS.pause}</button>`
-              : (task.status === 'paused' || task.status === 'stopped'
-                  ? `<button class="btn-icon" data-action="resume" title="Resume">${ICONS.resume}</button>`
-                  : `<button class="btn-icon" data-action="pause" title="Pause" disabled style="opacity:0.5">${ICONS.pause}</button>`
-                )
+            <button class="btn-icon" data-action="trigger" title="${t('actions.trigger')}" ${task.status === 'running' ? 'disabled' : ''}>${ICONS.trigger}</button>
+            ${task.status === 'stopped' || task.status === 'error'
+              ? `<button class="btn-icon success" data-action="start" title="${t('actions.start')}">${ICONS.resume}</button>`
+              : `<button class="btn-icon warning" data-action="stop" title="${t('actions.stop')}" ${task.status === 'running' ? 'disabled' : ''}>${ICONS.pause}</button>`
             }
-            <button class="btn-icon danger" data-action="remove" title="Remove">${ICONS.remove}</button>
+            <button class="btn-icon danger" data-action="remove" title="${t('actions.remove')}">${ICONS.remove}</button>
           </div>
         </td>
       </tr>
@@ -138,16 +164,29 @@ export class TaskList extends HTMLElement {
       <style>
         ${themeStyles}
         :host {
-          display: block;
-          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
           height: 100%;
           background: var(--hs-bg);
+        }
+        .table-container {
+          flex: 1;
+          min-height: 0;
+          overflow-y: auto;
+          overflow-x: auto;
+          position: relative;
         }
         table {
           width: 100%;
           border-collapse: collapse;
           font-size: var(--hs-font-size);
           color: var(--hs-text);
+        }
+        thead {
+          position: sticky;
+          top: 0;
+          z-index: 2;
+          background: var(--hs-bg);
         }
         th {
           text-align: left;
@@ -156,11 +195,9 @@ export class TaskList extends HTMLElement {
           color: var(--hs-text-secondary);
           font-weight: 600;
           background: var(--hs-bg);
-          position: sticky;
-          top: 0;
-          z-index: 1;
           font-size: 11px;
           text-transform: uppercase;
+          white-space: nowrap;
         }
         td {
           padding: 8px 12px;
@@ -220,7 +257,11 @@ export class TaskList extends HTMLElement {
           font-size: 11px;
         }
         .col-actions {
-          width: 140px;
+          width: 100px;
+          position: sticky;
+          right: 0;
+          background: var(--hs-bg);
+          box-shadow: -2px 0 4px rgba(0,0,0,0.1);
         }
         .action-group {
           display: flex;
@@ -267,23 +308,34 @@ export class TaskList extends HTMLElement {
           background: var(--hs-danger);
           border-color: var(--hs-danger);
         }
+        .btn-icon:disabled {
+          opacity: 0.4;
+          cursor: not-allowed;
+        }
+        .btn-icon:disabled:hover {
+          background: transparent;
+          color: var(--hs-text-secondary);
+          border-color: var(--hs-border);
+        }
       </style>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>${t('list.idTags')}</th>
-            <th>${t('list.status')}</th>
-            <th>${t('list.schedule')}</th>
-            <th>${t('list.count')}</th>
-            <th>${t('list.lastRun')}</th>
-            <th>${t('list.actions')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          <!-- Rows -->
-        </tbody>
-      </table>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px">#</th>
+              <th style="min-width:150px">${t('list.idTags')}</th>
+              <th style="width:100px">${t('list.status')}</th>
+              <th style="width:100px">${t('list.schedule')}</th>
+              <th style="width:60px">${t('list.count')}</th>
+              <th style="width:100px">${t('list.lastRun')}</th>
+              <th style="width:100px">${t('list.actions')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- Rows -->
+          </tbody>
+        </table>
+      </div>
       <div class="tip">
         ${t('list.tip')}
       </div>
