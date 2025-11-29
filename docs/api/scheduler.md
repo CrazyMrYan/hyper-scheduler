@@ -1,78 +1,306 @@
-# Scheduler API
+# Scheduler
 
-## 类: `Scheduler`
+核心调度器类，负责任务的注册、调度和生命周期管理。
 
-调度器的主类。
-
-### 构造函数
+## 构造函数
 
 ```typescript
-new Scheduler(options?: SchedulerOptions)
+new Scheduler(config?: SchedulerConfig)
 ```
 
-**参数**:
-- `options` (可选):
-  - `debug?: boolean`: 是否开启调试模式，开启后会输出详细日志。默认 `false`。
-  - `timezone?: string`: (计划中) 指定时区，目前默认使用本地系统时区。
+### 参数
 
----
+- **config** `SchedulerConfig` - 可选配置对象
 
-### 方法
+| 属性 | 类型 | 默认值 | 说明 |
+|------|------|--------|------|
+| `debug` | `boolean` | `false` | 启用调试日志输出 |
+| `timezone` | `string` | 系统时区 | 全局时区设置，如 `'Asia/Shanghai'` |
+| `maxHistory` | `number` | `50` | 每个任务保留的最大执行历史记录数 |
+| `plugins` | `HyperSchedulerPlugin[]` | `[]` | 要在初始化时加载的插件实例数组 |
 
-#### `addTask(task: TaskDefinition): void`
+### 示例
 
-注册一个新的定时任务。
-
-**参数**:
-- `task`: 任务定义对象
-  - `id: string`: 任务唯一标识。如果重复会覆盖旧任务。
-  - `schedule: string`: Cron 表达式 (e.g., `* * * * *`) 或 间隔字符串 (e.g., `30s`)。
-  - `handler: () => void | Promise<void>`: 任务执行的回调函数。
-
-**示例**:
 ```typescript
-scheduler.addTask({
-  id: 'sync-data',
-  schedule: '15m',
+import { Scheduler, DevTools } from 'hyper-scheduler';
+
+const scheduler = new Scheduler({
+  debug: true,
+  timezone: 'Asia/Shanghai',
+  maxHistory: 100,
+  plugins: [
+    new DevTools({ theme: 'dark' })
+  ]
+});
+```
+
+## 实例方法
+
+### createTask()
+
+注册新任务到调度器。
+
+```typescript
+createTask(definition: TaskDefinition): void
+```
+
+#### 参数
+
+- **definition** `TaskDefinition` - 任务定义对象
+
+| 属性 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| `id` | `string` | ✓ | 任务唯一标识符 |
+| `schedule` | `string` | ✓ | 调度规则（Cron 表达式或时间间隔） |
+| `handler` | `() => void \| Promise<void>` | ✓ | 任务执行函数 |
+| `tags` | `string[]` | - | 任务标签，用于分类过滤 |
+| `options` | `TaskOptions` | - | 任务选项 |
+
+详细的 `TaskOptions` 配置请参考 [Task API](./task.md)。
+
+#### 示例
+
+```typescript
+// 基础任务
+scheduler.createTask({
+  id: 'daily-backup',
+  schedule: '0 0 2 * * *', // 每天凌晨 2:00
   handler: async () => {
-    await syncData();
+    await backupDatabase();
+  },
+  tags: ['backup', 'critical']
+});
+
+// 带重试和错误处理的任务
+scheduler.createTask({
+  id: 'api-sync',
+  schedule: '5m',
+  handler: async () => {
+    await syncWithAPI();
+  },
+  options: {
+    retry: {
+      maxAttempts: 3,
+      initialDelay: 1000,
+      factor: 2
+    },
+    onError: (error, taskId) => {
+      console.error(`Task ${taskId} failed:`, error.message);
+    }
   }
 });
 ```
 
-#### `removeTask(taskId: string): void`
+### start()
 
-根据 ID 移除一个已注册的任务。
-
-**参数**:
-- `taskId`: 要移除的任务 ID。
-
-#### `start(): void`
-
-启动调度器。启动后，调度器开始计时并根据规则触发任务。
-
-#### `stop(): void`
-
-停止调度器。停止后，所有任务暂停触发，直到再次调用 `start()`。
-
-#### `getTask(taskId: string): Task | undefined`
-
-获取指定 ID 的任务信息（包括下次执行时间等运行时状态）。
-
-#### `clear(): void`
-
-移除所有任务并停止调度器。
-
----
-
-## 类型定义
-
-### `TaskDefinition`
+启动调度器，开始执行所有已注册的任务。
 
 ```typescript
-interface TaskDefinition {
-  id: string;
-  schedule: string;
-  handler: () => void | Promise<void>;
+start(): void
+```
+
+#### 示例
+
+```typescript
+scheduler.start();
+```
+
+### stop()
+
+停止调度器，暂停所有任务的调度。已经在执行的任务会继续完成。
+
+```typescript
+stop(): void
+```
+
+#### 示例
+
+```typescript
+scheduler.stop();
+```
+
+### startTask()
+
+启动指定任务（从 stopped 状态恢复）。
+
+```typescript
+startTask(taskId: string): void
+```
+
+#### 参数
+
+- **taskId** `string` - 任务 ID
+
+#### 示例
+
+```typescript
+scheduler.startTask('daily-backup');
+```
+
+### stopTask()
+
+停止指定任务，任务状态变为 `stopped`，不再参与调度。
+
+```typescript
+stopTask(taskId: string): void
+```
+
+#### 参数
+
+- **taskId** `string` - 任务 ID
+
+#### 示例
+
+```typescript
+scheduler.stopTask('daily-backup');
+```
+
+### triggerTask()
+
+手动触发任务立即执行一次，不影响正常调度。执行完成后恢复到之前的状态。
+
+```typescript
+triggerTask(taskId: string): Promise<void>
+```
+
+#### 参数
+
+- **taskId** `string` - 任务 ID
+
+#### 返回值
+
+- `Promise<void>` - 任务执行完成后 resolve
+
+#### 示例
+
+```typescript
+await scheduler.triggerTask('daily-backup');
+console.log('Manual trigger completed');
+```
+
+### deleteTask()
+
+删除指定任务，任务将从调度器中移除。
+
+```typescript
+deleteTask(taskId: string): boolean
+```
+
+#### 参数
+
+- **taskId** `string` - 任务 ID
+
+#### 返回值
+
+- `boolean` - 删除成功返回 `true`，任务不存在返回 `false`
+
+#### 示例
+
+```typescript
+const deleted = scheduler.deleteTask('old-task');
+if (deleted) {
+  console.log('Task removed successfully');
 }
 ```
+
+### getTask()
+
+获取指定任务的详细信息。
+
+```typescript
+getTask(taskId: string): Task | undefined
+```
+
+#### 参数
+
+- **taskId** `string` - 任务 ID
+
+#### 返回值
+
+- `Task | undefined` - 任务对象，不存在则返回 `undefined`
+
+#### 示例
+
+```typescript
+const task = scheduler.getTask('daily-backup');
+if (task) {
+  console.log('Task status:', task.status);
+  console.log('Next run:', new Date(task.nextRun));
+}
+```
+
+### getAllTasks()
+
+获取所有已注册任务的列表。
+
+```typescript
+getAllTasks(): Task[]
+```
+
+#### 返回值
+
+- `Task[]` - 任务对象数组
+
+#### 示例
+
+```typescript
+const tasks = scheduler.getAllTasks();
+console.log(`Total tasks: ${tasks.length}`);
+
+tasks.forEach(task => {
+  console.log(`${task.id}: ${task.status}`);
+});
+```
+
+### on()
+
+订阅调度器事件。
+
+```typescript
+on(event: string, handler: (payload: any) => void): () => void
+```
+
+#### 参数
+
+- **event** `string` - 事件名称
+- **handler** `(payload: any) => void` - 事件处理函数
+
+#### 返回值
+
+- `() => void` - 取消订阅函数
+
+#### 支持的事件
+
+| 事件名 | 触发时机 | payload 结构 |
+|--------|----------|--------------|
+| `task_registered` | 任务注册时 | `{ taskId: string, task: Task }` |
+| `task_started` | 任务开始执行时 | `{ taskId: string, task: Task }` |
+| `task_completed` | 任务执行成功时 | `{ taskId: string, task: Task, duration: number }` |
+| `task_failed` | 任务执行失败时 | `{ taskId: string, task: Task, error: Error, duration: number }` |
+| `task_stopped` | 任务停止时 | `{ taskId: string, task: Task }` |
+| `task_removed` | 任务删除时 | `{ taskId: string }` |
+
+#### 示例
+
+```typescript
+// 订阅任务完成事件
+const unsubscribe = scheduler.on('task_completed', ({ taskId, duration }) => {
+  console.log(`Task ${taskId} completed in ${duration}ms`);
+});
+
+// 订阅任务失败事件
+scheduler.on('task_failed', ({ taskId, error }) => {
+  console.error(`Task ${taskId} failed:`, error.message);
+  // 发送告警通知
+  sendAlert(taskId, error);
+});
+
+// 取消订阅
+unsubscribe();
+```
+
+## 相关链接
+
+- [Task API](./task.md) - 任务配置详解
+- [DevTools API](./devtools.md) - 调试工具配置
+- [类型定义](./types.md) - 完整类型定义

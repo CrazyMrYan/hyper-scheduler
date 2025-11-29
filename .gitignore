@@ -41,6 +41,6 @@ lib/
 # Other
 .gemini/
 
-docs/.vitepress/cache/*
+*/.vitepress/cache/
 
 .windsurf/

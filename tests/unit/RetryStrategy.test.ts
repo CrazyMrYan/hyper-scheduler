@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { RetryStrategy } from '../../src/core/RetryStrategy';
+import { RetryStrategy } from '../../src/core/retry-strategy';
 
 describe('RetryStrategy', () => {
   it('should return -1 if no options are provided', () => {

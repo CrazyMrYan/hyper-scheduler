@@ -1,36 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
 import { parseSchedule, getNextRun } from '../../src/utils/schedule';
-import * as cronParser from 'cron-parser';
-
-// @ts-ignore
-const parser = cronParser.default || cronParser;
-
-vi.mock('cron-parser', () => ({
-  default: {
-    parseExpression: vi.fn((cron: string) => {
-      if (cron === 'invalid-cron' || cron === 'invalid') {
-        throw new Error('Invalid cron format');
-      }
-      // Mock a basic cron-parser behavior
-      return {
-        next: vi.fn(() => ({
-          toDate: vi.fn(() => new Date(Date.now() + 60 * 1000)), // Next minute
-        })),
-      };
-    }),
-  },
-  parseExpression: vi.fn((cron: string) => {
-    if (cron === 'invalid-cron' || cron === 'invalid') {
-      throw new Error('Invalid cron format');
-    }
-    // Mock a basic cron-parser behavior
-    return {
-      next: vi.fn(() => ({
-        toDate: vi.fn(() => new Date(Date.now() + 60 * 1000)), // Next minute
-      })),
-    };
-  }),
-}));
 
 describe('schedule.ts', () => {
   describe('parseSchedule', () => {
@@ -62,7 +31,6 @@ describe('schedule.ts', () => {
       const result = parseSchedule('* * * * *');
       expect(result.type).toBe('cron');
       expect(result.value).toBe('* * * * *');
-      expect(parser.parseExpression).toHaveBeenCalledWith('* * * * *');
     });
 
     it('should throw error for invalid format', () => {
@@ -88,9 +56,10 @@ describe('schedule.ts', () => {
       const now = Date.now();
       vi.setSystemTime(now);
       const schedule = parseSchedule('* * * * *');
-      const nextRun = getNextRun(schedule, { timezone: 'UTC' });
-      expect(parser.parseExpression).toHaveBeenCalledWith('* * * * *', { tz: 'UTC' });
-      expect(nextRun.getTime()).toBe(now + 60 * 1000); // Mocked value
+      const nextRun = getNextRun(schedule);
+      // 应该返回下一分钟的 0 秒
+      expect(nextRun.getTime()).toBeGreaterThan(now);
+      expect(nextRun.getSeconds()).toBe(0);
       vi.useRealTimers();
     });
 

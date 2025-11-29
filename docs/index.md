@@ -4,6 +4,9 @@ layout: home
 hero:
   name: Hyper Scheduler
   text: 轻量级、高性能的全局任务调度 JS 库
+  image:
+    src: /logo.svg
+    alt: Hyper Scheduler Logo
   tagline: 支持 Cron 表达式与人性化时间间隔，浏览器与 Node.js 通用
   actions:
     - theme: brand

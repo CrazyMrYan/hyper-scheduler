@@ -2,9 +2,13 @@ import { defineConfig } from 'vitepress';
 
 export default defineConfig({
   lang: 'zh-CN', // 设置语言为中文
-  title: 'Hyper 调度器', // 更新标题
+  title: 'Hyper Scheduler', // 更新标题
   description: '轻量级全局任务调度 JavaScript 库。', // 更新描述
+  head: [
+    ['link', { rel: 'icon', href: '/logo.svg', type: 'image/svg+xml' }]
+  ],
   themeConfig: {
+    logo: '/logo.svg',
     nav: [
       { text: '指南', link: '/guide/getting-started' }, // 更新导航文本
       { text: 'API 参考', link: '/api/scheduler' },     // 更新导航文本
@@ -22,13 +26,18 @@ export default defineConfig({
         text: '指南',
         items: [
           { text: '快速开始', link: '/guide/getting-started' },
-          { text: '核心概念', link: '/guide/core-concepts' }
+          { text: '核心概念', link: '/guide/core-concepts' },
+          { text: '最佳实践', link: '/guide/best-practices' }
         ]
       },
       {
         text: 'API 参考',
         items: [
-          { text: 'Scheduler', link: '/api/scheduler' }
+          { text: '总览', link: '/api/' },
+          { text: 'Scheduler', link: '/api/scheduler' },
+          { text: 'Task', link: '/api/task' },
+          { text: 'DevTools', link: '/api/devtools' },
+          { text: '类型定义', link: '/api/types' }
         ]
       }
     ]

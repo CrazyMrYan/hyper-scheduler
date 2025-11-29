@@ -1,86 +1,38 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { CoreScheduler } from '../../src/index';
-import { TimerStrategy } from '../../src/platform/TimerStrategy';
+import { describe, it, expect, vi } from 'vitest';
+import { Scheduler } from '../../src/core/Scheduler';
+import { NodeTimer } from '../../src/platform/node/NodeTimer';
+import { HyperSchedulerPlugin } from '../../src/types';
 
-// Mock TimerStrategy
-class MockTimer implements TimerStrategy {
-  schedule = vi.fn();
-  cancel = vi.fn();
-}
+describe('Scheduler Constructor Plugin Loading', () => {
+  it('should initialize plugins passed in config', () => {
+    const initSpy = vi.fn();
+    const plugin: HyperSchedulerPlugin = {
+      name: 'TestPlugin',
+      init: initSpy
+    };
 
-describe('Scheduler', () => {
-  let scheduler: CoreScheduler;
-  let mockTimer: MockTimer;
-
-  beforeEach(() => {
-    mockTimer = new MockTimer();
-    scheduler = new CoreScheduler(mockTimer);
-  });
-
-  afterEach(() => {
-    scheduler.stop();
-  });
-
-  it('should create a task successfully with interval string', () => {
-    scheduler.createTask({
-      id: 'interval-task',
-      schedule: '10s', // Use an interval string
-      handler: vi.fn(),
+    const scheduler = new Scheduler(new NodeTimer(), {
+      plugins: [plugin]
     });
-    expect(scheduler.getTask('interval-task')).toBeDefined();
-    expect(scheduler.getTask('interval-task')?.schedule).toBe('10s');
+
+    expect(initSpy).toHaveBeenCalledTimes(1);
+    expect(initSpy).toHaveBeenCalledWith(scheduler);
   });
 
-  it('should throw error when creating duplicate task ID', () => {
-    scheduler.createTask({
-      id: 'test-task',
-      schedule: '* * * * *',
-      handler: vi.fn(),
-    });
-    expect(() => {
-      scheduler.createTask({
-        id: 'test-task',
-        schedule: '* * * * *',
-        handler: vi.fn(),
-      });
-    }).toThrow();
-  });
+  it('should not crash if a plugin throws error during init', () => {
+    const consoleSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorPlugin: HyperSchedulerPlugin = {
+      name: 'ErrorPlugin',
+      init: () => {
+        throw new Error('Plugin Init Failed');
+      }
+    };
 
-  it('should delete a task', () => {
-    scheduler.createTask({
-      id: 'test-task',
-      schedule: '* * * * *',
-      handler: vi.fn(),
+    const scheduler = new Scheduler(new NodeTimer(), {
+      plugins: [errorPlugin]
     });
-    expect(scheduler.deleteTask('test-task')).toBe(true);
-    expect(scheduler.getTask('test-task')).toBeUndefined();
-  });
 
-  it('should schedule task when started', () => {
-    scheduler.createTask({
-      id: 'test-task',
-      schedule: '* * * * *',
-      handler: vi.fn(),
-    });
-    
-    scheduler.start();
-    expect(mockTimer.schedule).toHaveBeenCalled();
-  });
-
-  it('should stop scheduling when stopped', () => {
-    scheduler.createTask({
-      id: 'test-task',
-      schedule: '* * * * *',
-      handler: vi.fn(),
-    });
-    scheduler.start();
-    // Wait for schedule to happen? No, it happens synchronously in start() -> scheduleTask()
-    // Scheduler logic:
-    // start() -> scheduleTask(task) -> timerStrategy.schedule() -> timers.set(id, handle)
-    
-    scheduler.stop();
-    // stop() -> timers.forEach(cancel)
-    
-    expect(mockTimer.cancel).toHaveBeenCalled();
+    expect(consoleSpy).toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 });

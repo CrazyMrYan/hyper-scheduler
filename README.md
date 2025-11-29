@@ -1,7 +1,13 @@
-# Hyper Scheduler
+<p align="center">
+  <img src="docs/public/logo.svg" width="120" height="120" alt="Hyper Scheduler Logo">
+</p>
 
-![NPM Version](https://img.shields.io/npm/v/hyper-scheduler)
-![License](https://img.shields.io/npm/l/hyper-scheduler)
+<h1 align="center">Hyper Scheduler</h1>
+
+<p align="center">
+  <img src="https://img.shields.io/npm/v/hyper-scheduler" alt="NPM Version">
+  <img src="https://img.shields.io/npm/l/hyper-scheduler" alt="License">
+</p>
 
 A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron expressions and Web Workers.
 
