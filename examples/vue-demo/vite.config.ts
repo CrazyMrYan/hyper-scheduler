@@ -7,6 +7,7 @@ export default defineConfig({
     port: 3001
   },
   optimizeDeps: {
-    exclude: ['hyper-scheduler'] // Handle local symlink/file: dependency
+    // Don't exclude hyper-scheduler to allow proper module resolution
+    // exclude: ['hyper-scheduler']
   }
 })

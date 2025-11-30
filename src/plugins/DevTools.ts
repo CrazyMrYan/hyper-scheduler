@@ -22,16 +22,31 @@ export class DevTools implements HyperSchedulerPlugin {
       // Import the UI component definition (side effect: defines <hs-devtools>)
       await import('../ui/components/devtools');
       
-      // Check DOM
+      // Wait for custom element to be defined
+      await customElements.whenDefined('hs-devtools');
+      
+      this.setupElement(scheduler);
+    } catch (e) {
+      console.error('[DevTools] Failed to mount:', e);
+    }
+  }
+
+  private setupElement(scheduler: Scheduler): void {
+    try {
+      // Check DOM - always create new element to ensure clean state
       let el = document.querySelector('hs-devtools') as any;
-      const isNew = !el;
-      if (isNew) {
-        el = document.createElement('hs-devtools');
+      if (el) {
+        // Remove existing element to ensure fresh initialization
+        el.remove();
       }
+      
+      // Create new element
+      el = document.createElement('hs-devtools');
       
       // IMPORTANT: Apply options BEFORE adding to DOM
       // so that connectedCallback can read the attributes
       const options = this.options;
+      console.log('[DevTools Plugin] options:', JSON.stringify(options));
       if (options.theme) el.setAttribute('theme', options.theme);
       if (options.dockPosition) el.setAttribute('dock', options.dockPosition);
       if (options.language) el.setAttribute('language', options.language);
@@ -41,11 +56,10 @@ export class DevTools implements HyperSchedulerPlugin {
         if (options.trigger.textColor) el.setAttribute('trigger-color', options.trigger.textColor);
         if (options.trigger.position) el.setAttribute('trigger-position', options.trigger.position);
       }
+      console.log('[DevTools Plugin] attributes set:', el.getAttribute('dock'), el.getAttribute('trigger-position'));
       
-      // Now add to DOM - connectedCallback will be called with attributes already set
-      if (isNew) {
-        document.body.appendChild(el);
-      }
+      // Add to DOM - connectedCallback will be called with attributes already set
+      document.body.appendChild(el);
 
       // Set scheduler API adapter
       // We need to wait for the element to upgrade if it hasn't already?
@@ -78,7 +92,7 @@ export class DevTools implements HyperSchedulerPlugin {
       }
 
     } catch (e) {
-      console.error('[DevTools] Failed to mount:', e);
+      console.error('[DevTools] Failed to setup element:', e);
     }
   }
 }

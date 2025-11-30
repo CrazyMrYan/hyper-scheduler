@@ -50,6 +50,17 @@ export class Timeline extends HTMLElement {
     this._history = val.history;
   }
 
+  set defaultZoom(val: number) {
+    if (val >= 0.5 && val <= 5) {
+      this.zoom = val;
+      this.timeRange = 60 * 1000 / this.zoom;
+      // 更新 slider 和 label
+      const zoomSlider = this._shadow.querySelector('.zoom-slider') as HTMLInputElement;
+      if (zoomSlider) zoomSlider.value = val.toString();
+      this.updateZoomLabel();
+    }
+  }
+
   // Method to update texts when language changes
   updateTexts() {
     this.updateZoomLabel();

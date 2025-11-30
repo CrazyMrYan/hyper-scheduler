@@ -47,6 +47,7 @@ export class DevTools extends HTMLElement {
     
     // Apply initial options from attributes (after bindStore so listeners are set up)
     const dockAttr = this.getAttribute('dock');
+    console.log('[DevTools] dock attribute:', dockAttr);
     if (dockAttr === 'bottom') {
       this.store.setDockPosition('bottom');
     }
@@ -59,6 +60,24 @@ export class DevTools extends HTMLElement {
     // Set language again through store to trigger UI updates for already rendered components
     if (languageAttr === 'en' || languageAttr === 'zh') {
       this.store.setLanguage(languageAttr);
+    }
+    
+    // Apply trigger button options
+    const triggerBg = this.getAttribute('trigger-bg');
+    const triggerColor = this.getAttribute('trigger-color');
+    const triggerPosition = this.getAttribute('trigger-position');
+    console.log('[DevTools] trigger attrs:', { triggerBg, triggerColor, triggerPosition });
+    if (triggerBg) this.$trigger.setAttribute('bg-color', triggerBg);
+    if (triggerColor) this.$trigger.setAttribute('text-color', triggerColor);
+    if (triggerPosition) this.$trigger.setAttribute('position', triggerPosition);
+    
+    // Apply default zoom to timeline
+    const defaultZoom = this.getAttribute('default-zoom');
+    if (defaultZoom) {
+      const zoom = parseFloat(defaultZoom);
+      if (!isNaN(zoom) && zoom >= 0.5 && zoom <= 5) {
+        this.$timeline.defaultZoom = zoom;
+      }
     }
     
     this.addEventListeners();

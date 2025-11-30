@@ -217,6 +217,9 @@ export class TaskHeader extends HTMLElement {
           width: 28px;
           height: 28px;
         }
+        .theme-btn span {
+          margin-top: 4px;
+        }
         button:hover {
           background: var(--hs-bg-secondary);
           color: var(--hs-text);

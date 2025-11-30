@@ -16,7 +16,17 @@ onMounted(() => {
   // 创建调度器 - DevTools 仅在开发环境加载
   scheduler.value = new Scheduler({ 
     debug: true,
-    plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
+    plugins: [new DevTools({ 
+      theme: 'auto', 
+      language: 'zh', 
+      dockPosition: 'bottom',
+      defaultZoom: 2,
+      trigger: {
+        position: 'bottom-left',  // 右下角
+        backgroundColor: '#10b981',  // 绿色背景
+        textColor: '#ffffff'         // 白色文字
+      }
+    })]
   })
   
   // Cron 任务 - 每 3 秒
