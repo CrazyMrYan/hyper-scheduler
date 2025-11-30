@@ -13,6 +13,7 @@ export interface DevToolsState {
   tasks: Map<string, TaskSnapshot>;
   history: Map<string, any[]>; 
   fps: number;
+  schedulerRunning: boolean;
 }
 
 type Listener<T> = (value: T) => void;
@@ -35,6 +36,7 @@ export class DevToolsStore {
       tasks: new Map(),
       history: new Map(),
       fps: 0,
+      schedulerRunning: false,
     };
     this.listeners = new Map();
   }
@@ -180,5 +182,10 @@ export class DevToolsStore {
       this.state.tasks = newTasks;
       this.notify('tasks', this.state.tasks);
     }
+  }
+
+  setSchedulerRunning(running: boolean) {
+    this.state.schedulerRunning = running;
+    this.notify('schedulerRunning', running);
   }
 }

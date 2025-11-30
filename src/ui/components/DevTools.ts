@@ -95,6 +95,10 @@ export class DevTools extends HTMLElement {
     // Initial load - fetch immediately
     const tasks = this.scheduler.getTasks();
     tasks.forEach(t => this.store.updateTask(t));
+    
+    // Get initial scheduler running state
+    const isRunning = this.scheduler.isRunning();
+    this.store.setSchedulerRunning(isRunning);
 
     // Subscribe to ALL events and refresh task list
     const refreshTasks = () => {
@@ -111,6 +115,18 @@ export class DevTools extends HTMLElement {
     this.scheduler.on('task_removed', refreshTasks);
     this.scheduler.on('task_stopped', (payload: any) => {
       console.log('[DevTools] task_stopped event:', payload);
+      refreshTasks();
+    });
+    
+    // Listen to scheduler start/stop events
+    this.scheduler.on('scheduler_started', () => {
+      console.log('[DevTools] scheduler_started event');
+      this.store.setSchedulerRunning(true);
+      refreshTasks();
+    });
+    this.scheduler.on('scheduler_stopped', () => {
+      console.log('[DevTools] scheduler_stopped event');
+      this.store.setSchedulerRunning(false);
       refreshTasks();
     });
 
@@ -325,6 +341,10 @@ export class DevTools extends HTMLElement {
     this.store.subscribe('filterText', (text) => {
       const tasks = this.store.getState().tasks;
       this.$taskList.filter(text, tasks);
+    });
+
+    this.store.subscribe('schedulerRunning', (running) => {
+      this.$header.schedulerRunning = running;
     });
   }
 

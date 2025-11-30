@@ -82,6 +82,7 @@ export class DevTools implements HyperSchedulerPlugin {
             on: (evt: string, handler: (payload: any) => void) => {
                 return scheduler.on(evt, handler);
             },
+            isRunning: () => scheduler.isRunning(),
             trigger: (id: string) => scheduler.triggerTask(id),
             pause: (id: string) => scheduler.stopTask(id),
             resume: (id: string) => scheduler.startTask(id),

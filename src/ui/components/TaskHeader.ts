@@ -9,9 +9,11 @@ export class TaskHeader extends HTMLElement {
   private _theme: 'light' | 'dark' | 'auto' = 'auto';
   private _activeTab: 'tasks' | 'timeline' = 'tasks';
   private _language: 'en' | 'zh' = 'en';
+  private _schedulerRunning: boolean = false;
 
   private $fps!: HTMLElement;
   private $stats!: HTMLElement;
+  private $schedulerStatus!: HTMLElement;
   private $themeIcon!: HTMLElement;
   private $dockIcon!: HTMLElement;
   private $tabs!: NodeListOf<HTMLElement>;
@@ -46,6 +48,16 @@ export class TaskHeader extends HTMLElement {
     }
   }
 
+  set schedulerRunning(val: boolean) {
+    this._schedulerRunning = val;
+    if (this.$schedulerStatus) {
+      const statusText = val ? t('stats.running') : t('stats.stopped');
+      const statusColor = val ? 'var(--hs-success)' : 'var(--hs-danger)';
+      const statusIcon = val ? '▶️' : '⏹️';
+      this.$schedulerStatus.innerHTML = `${statusIcon} ${t('stats.scheduler')}: <span style="color:${statusColor}">${statusText}</span>`;
+    }
+  }
+
   set theme(val: 'light' | 'dark' | 'auto') {
     this._theme = val;
     this.setAttribute('theme', val);
@@ -75,6 +87,7 @@ export class TaskHeader extends HTMLElement {
   private cacheDom() {
     this.$fps = this._shadow.querySelector('.fps')!;
     this.$stats = this._shadow.querySelector('.stats')!;
+    this.$schedulerStatus = this._shadow.querySelector('.scheduler-status')!;
     this.$themeIcon = this._shadow.querySelector('.theme-btn span')!;
     this.$dockIcon = this._shadow.querySelector('.dock-btn')!;
     this.$tabs = this._shadow.querySelectorAll('.tab');
@@ -143,9 +156,10 @@ export class TaskHeader extends HTMLElement {
       if (key === 'timeline') tab.innerHTML = `📈 ${t('tabs.timeline')}`;
     });
 
-    // Force update stats and fps to refresh labels
+    // Force update stats, fps, and scheduler status to refresh labels
     this.stats = this._stats;
     this.fps = this._fps;
+    this.schedulerRunning = this._schedulerRunning;
   }
 
   private updateView() {
@@ -239,6 +253,11 @@ export class TaskHeader extends HTMLElement {
           font-size: 11px;
           color: var(--hs-text-secondary);
           border-bottom: 1px solid var(--hs-border);
+          gap: 16px;
+        }
+        .stats-left {
+          display: flex;
+          gap: 16px;
         }
         .tabs-bar {
           display: flex;
@@ -282,7 +301,10 @@ export class TaskHeader extends HTMLElement {
       </div>
       
       <div class="stats-bar">
-        <div class="stats"></div>
+        <div class="stats-left">
+          <div class="scheduler-status"></div>
+          <div class="stats"></div>
+        </div>
         <div class="fps"></div>
       </div>
       

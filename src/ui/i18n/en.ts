@@ -12,7 +12,10 @@ export const en = {
     status: 'Status',
     active: 'Active',
     total: 'Total',
-    mainThread: 'Main Thread'
+    mainThread: 'Main Thread',
+    scheduler: 'Scheduler',
+    running: 'Running',
+    stopped: 'Stopped'
   },
   tabs: {
     tasks: 'Tasks List',

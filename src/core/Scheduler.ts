@@ -309,6 +309,13 @@ export class Scheduler {
   }
 
   /**
+   * 获取调度器运行状态。
+   */
+  isRunning(): boolean {
+    return this.running;
+  }
+
+  /**
    * 手动触发任务执行（忽略调度器状态，立即执行一次）。
    * 执行完成后恢复到之前的状态。
    * @param id 任务 ID
@@ -371,6 +378,7 @@ export class Scheduler {
     if (this.running) return;
     this.running = true;
     this.log('Scheduler started');
+    this.emit('scheduler_started', { running: true });
     this.registry.getAllTasks().forEach((task) => {
       // 启动所有 stopped 状态的任务（新创建的任务默认是 stopped）
       if (task.status === 'stopped') {
@@ -392,8 +400,19 @@ export class Scheduler {
   stop(): void {
     this.running = false;
     this.log('Scheduler stopped');
+    this.emit('scheduler_stopped', { running: false });
     this.timers.forEach((handle) => this.timerStrategy.cancel(handle));
     this.timers.clear();
+    
+    // 将所有非 stopped 状态的任务标记为 stopped
+    this.registry.getAllTasks().forEach((task) => {
+      if (task.status !== 'stopped') {
+        task.status = 'stopped';
+        this.emit('task_updated', { taskId: task.id, task });
+      }
+    });
+    
+    this.notify(); // 通知 DevTools 更新状态
   }
 
   private scheduleTask(task: Task): void {

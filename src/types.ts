@@ -95,4 +95,5 @@ export interface TaskControlAPI {
 export interface SchedulerIntrospectionAPI {
   getTasks(): TaskSnapshot[];
   on(event: string, handler: (data: any) => void): () => void;
+  isRunning(): boolean;
 }

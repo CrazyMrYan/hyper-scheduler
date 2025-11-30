@@ -12,7 +12,10 @@ export const zh = {
     status: '状态',
     active: '活跃',
     total: '总数',
-    mainThread: '主线程'
+    mainThread: '主线程',
+    scheduler: '调度器',
+    running: '运行中',
+    stopped: '已停止'
   },
   tabs: {
     tasks: '任务列表',
