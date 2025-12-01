@@ -69,7 +69,7 @@ export class DevTools implements HyperSchedulerPlugin {
       if (typeof el.setScheduler === 'function') {
         el.setScheduler({
             getTasks: () => {
-            return scheduler.getAllTasks().map(task => ({
+            return scheduler.getAllTasks().map((task: any) => ({
                 id: task.id,
                 status: task.status,
                 lastRun: task.lastRun || null,
