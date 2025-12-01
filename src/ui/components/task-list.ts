@@ -55,7 +55,7 @@ export class TaskList extends HTMLElement {
         <tr>
           <th style="width:40px">#</th>
           <th style="min-width:150px">${t('list.idTags')}</th>
-          <th style="width:100px">${t('list.status')}</th>
+          <th style="width:150px">${t('list.status')}</th>
           <th style="width:70px">${t('list.driver')}</th>
           <th style="width:100px">${t('list.schedule')}</th>
           <th style="width:60px">${t('list.count')}</th>
@@ -362,7 +362,7 @@ export class TaskList extends HTMLElement {
             <tr>
               <th style="width:40px">#</th>
               <th style="min-width:150px">${t('list.idTags')}</th>
-              <th style="width:100px">${t('list.status')}</th>
+              <th style="width:150px">${t('list.status')}</th>
               <th style="width:70px">${t('list.driver')}</th>
               <th style="width:100px">${t('list.schedule')}</th>
               <th style="width:60px">${t('list.count')}</th>

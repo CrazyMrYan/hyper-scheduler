@@ -128,6 +128,7 @@ scheduler.createTask({
 interface TaskOptions {
   retry?: RetryConfig;
   timezone?: string;
+  driver?: 'main' | 'worker';
   onError?: (error: Error, taskId: string) => void;
 }
 ```
@@ -198,6 +199,43 @@ scheduler.createTask({
   handler: () => generateReport(),
   options: {
     timezone: 'America/New_York'
+  }
+});
+```
+
+### driver
+
+- **类型**: `'main' | 'worker'`
+- **默认值**: `'worker'`
+- **可选**
+
+指定任务的运行环境（驱动模式）。
+
+| 模式 | 说明 | 适用场景 |
+|------|------|----------|
+| `'worker'` | 任务在 Web Worker 线程中运行计时器 | 繁重计算、高频任务、不想阻塞 UI |
+| `'main'` | 任务在主线程中运行 (setInterval/setTimeout) | 需要访问 DOM 或 window 对象、简单的 UI 更新 |
+
+#### 示例
+
+```typescript
+// 在 Worker 中运行（默认）
+scheduler.createTask({
+  id: 'heavy-calc',
+  schedule: '5s',
+  handler: () => heavyComputation(),
+  options: {
+    driver: 'worker'
+  }
+});
+
+// 在主线程中运行
+scheduler.createTask({
+  id: 'ui-update',
+  schedule: '1s',
+  handler: () => updateClockUI(),
+  options: {
+    driver: 'main'
   }
 });
 ```
