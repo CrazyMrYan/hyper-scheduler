@@ -14,6 +14,7 @@ interface SchedulerConfig {
   maxHistory?: number;
   timezone?: string;
   plugins?: HyperSchedulerPlugin[];
+  driver?: 'worker' | 'main';
 }
 ```
 
@@ -23,6 +24,7 @@ interface SchedulerConfig {
 | `maxHistory` | `number` | `50` | 每个任务保留的最大执行历史记录数 |
 | `timezone` | `string` | 系统时区 | 全局时区设置，如 `'Asia/Shanghai'` |
 | `plugins` | `HyperSchedulerPlugin[]` | `[]` | 插件实例数组 |
+| `driver` | `'worker' \| 'main'` | `'worker'` | 定时器驱动方式（仅浏览器）：`'worker'` 使用 Web Worker，`'main'` 使用主线程 |
 
 ---
 
@@ -59,6 +61,7 @@ interface TaskOptions {
   retry?: RetryConfig;
   timezone?: string;
   onError?: (error: Error, taskId: string) => void;
+  driver?: 'worker' | 'main';
 }
 ```
 
@@ -67,6 +70,7 @@ interface TaskOptions {
 | `retry` | `RetryConfig` | 重试配置 |
 | `timezone` | `string` | 任务专属时区 |
 | `onError` | `(error: Error, taskId: string) => void` | 错误处理回调 |
+| `driver` | `'worker' \| 'main'` | 定时器驱动方式（仅浏览器），覆盖全局配置 |
 
 #### RetryConfig
 

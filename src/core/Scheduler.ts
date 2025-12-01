@@ -5,6 +5,8 @@ import { validateId } from '../utils/id';
 import { parseSchedule, getNextRun as getNextScheduleRun } from '../utils/schedule'; // 替换为新的 schedule 工具
 import { RetryStrategy } from './retry-strategy';
 
+export type TimerStrategyFactory = (driver: 'worker' | 'main') => TimerStrategy;
+
 /**
  * 核心调度器类。
  * 负责管理任务生命周期、时间循环和任务执行。
@@ -12,7 +14,9 @@ import { RetryStrategy } from './retry-strategy';
 export class Scheduler {
   private registry: TaskRegistry;
   private config: SchedulerConfig;
-  private timerStrategy: TimerStrategy;
+  private defaultTimerStrategy: TimerStrategy;
+  private timerStrategyFactory?: TimerStrategyFactory;
+  private taskTimerStrategies: Map<string, TimerStrategy>; // Task ID -> TimerStrategy
   private running: boolean;
   private timers: Map<string, any>; // Task ID -> Timer Handle
   private listeners: ((tasks: Task[]) => void)[];
@@ -20,12 +24,19 @@ export class Scheduler {
 
   /**
    * 创建一个新的调度器实例。
-   * @param timerStrategy 计时策略（NodeTimer 或 BrowserTimer）
+   * @param timerStrategy 默认计时策略（NodeTimer 或 BrowserTimer）
    * @param config 调度器配置
+   * @param timerStrategyFactory 可选的定时器策略工厂，用于创建任务级别的定时器
    */
-  constructor(timerStrategy: TimerStrategy, config: SchedulerConfig = {}) {
+  constructor(
+    timerStrategy: TimerStrategy, 
+    config: SchedulerConfig = {},
+    timerStrategyFactory?: TimerStrategyFactory
+  ) {
     this.registry = new TaskRegistry();
-    this.timerStrategy = timerStrategy;
+    this.defaultTimerStrategy = timerStrategy;
+    this.timerStrategyFactory = timerStrategyFactory;
+    this.taskTimerStrategies = new Map();
     this.config = {
       debug: false,
       maxHistory: 50,
@@ -84,6 +95,32 @@ export class Scheduler {
     if (handlers) {
       handlers.forEach(handler => handler(payload));
     }
+  }
+
+  /**
+   * 获取任务的定时器策略
+   * 优先使用任务级别配置，其次使用全局配置，最后使用默认策略
+   */
+  private getTimerStrategy(task: Task): TimerStrategy {
+    const taskDriver = task.options?.driver;
+    const globalDriver = this.config.driver;
+    const driver = taskDriver || globalDriver;
+    
+    // 如果没有指定 driver 或没有工厂函数，使用默认策略
+    if (!driver || !this.timerStrategyFactory) {
+      return this.defaultTimerStrategy;
+    }
+    
+    // 检查是否已经为该任务创建了策略
+    const cacheKey = `${task.id}_${driver}`;
+    if (this.taskTimerStrategies.has(cacheKey)) {
+      return this.taskTimerStrategies.get(cacheKey)!;
+    }
+    
+    // 创建新的策略并缓存
+    const strategy = this.timerStrategyFactory(driver);
+    this.taskTimerStrategies.set(cacheKey, strategy);
+    return strategy;
   }
 
   private notify(): void {
@@ -156,7 +193,7 @@ export class Scheduler {
     // Cancel existing timer if any
     const existingHandle = this.timers.get(id);
     if (existingHandle) {
-      this.timerStrategy.cancel(existingHandle);
+      this.getTimerStrategy(task).cancel(existingHandle);
       this.timers.delete(id);
     }
 
@@ -185,7 +222,8 @@ export class Scheduler {
 
       this.log(`Scheduling task ${task.id} for ${nextRun.toISOString()} (in ${delay}ms)`);
 
-      const handle = this.timerStrategy.schedule(() => {
+      const timerStrategy = this.getTimerStrategy(task);
+      const handle = timerStrategy.schedule(() => {
         this.executeTaskIndividual(task);
       }, delay);
 
@@ -258,7 +296,8 @@ export class Scheduler {
       const retryDelay = RetryStrategy.getDelay(attempt, task.options?.retry);
       if (retryDelay >= 0) {
         this.log(`Retrying task ${task.id} in ${retryDelay}ms (Attempt ${attempt + 1})`);
-        const handle = this.timerStrategy.schedule(() => {
+        const timerStrategy = this.getTimerStrategy(task);
+        const handle = timerStrategy.schedule(() => {
             this.executeTaskIndividual(task, attempt + 1);
         }, retryDelay);
         this.timers.set(task.id, handle);
@@ -278,13 +317,17 @@ export class Scheduler {
    * @param id 任务 ID
    */
   stopTask(id: string): void {
+    const task = this.registry.getTask(id);
     const handle = this.timers.get(id);
-    if (handle) {
-      this.timerStrategy.cancel(handle);
+    if (handle && task) {
+      this.getTimerStrategy(task).cancel(handle);
+      this.timers.delete(id);
+    } else if (handle) {
+      // Fallback to default strategy if task not found
+      this.defaultTimerStrategy.cancel(handle);
       this.timers.delete(id);
     }
 
-    const task = this.registry.getTask(id);
     if (task) {
       task.status = 'stopped';
       this.log(`Task stopped: ${id}`);
@@ -313,6 +356,23 @@ export class Scheduler {
    */
   isRunning(): boolean {
     return this.running;
+  }
+
+  /**
+   * 获取任务的实际驱动方式。
+   * 优先使用任务级配置，其次使用全局配置，默认为 'worker'。
+   */
+  getTaskDriver(id: string): 'worker' | 'main' {
+    const task = this.registry.getTask(id);
+    if (!task) return this.config.driver || 'worker';
+    return task.options?.driver || this.config.driver || 'worker';
+  }
+
+  /**
+   * 获取全局驱动配置。
+   */
+  getGlobalDriver(): 'worker' | 'main' {
+    return this.config.driver || 'worker';
   }
 
   /**
@@ -401,7 +461,16 @@ export class Scheduler {
     this.running = false;
     this.log('Scheduler stopped');
     this.emit('scheduler_stopped', { running: false });
-    this.timers.forEach((handle) => this.timerStrategy.cancel(handle));
+    
+    // Cancel all timers using appropriate strategy for each task
+    this.timers.forEach((handle, taskId) => {
+      const task = this.registry.getTask(taskId);
+      if (task) {
+        this.getTimerStrategy(task).cancel(handle);
+      } else {
+        this.defaultTimerStrategy.cancel(handle);
+      }
+    });
     this.timers.clear();
     
     // 将所有非 stopped 状态的任务标记为 stopped
@@ -431,7 +500,8 @@ export class Scheduler {
 
       this.log(`Scheduling task ${task.id} for ${nextRun.toISOString()} (in ${delay}ms)`);
 
-      const handle = this.timerStrategy.schedule(() => {
+      const timerStrategy = this.getTimerStrategy(task);
+      const handle = timerStrategy.schedule(() => {
         this.executeTask(task);
       }, delay);
 
@@ -499,7 +569,8 @@ export class Scheduler {
       const retryDelay = RetryStrategy.getDelay(attempt, task.options?.retry);
       if (retryDelay >= 0) {
         this.log(`Retrying task ${task.id} in ${retryDelay}ms (Attempt ${attempt + 1})`);
-        const handle = this.timerStrategy.schedule(() => {
+        const timerStrategy = this.getTimerStrategy(task);
+        const handle = timerStrategy.schedule(() => {
             this.executeTask(task, attempt + 1);
         }, retryDelay);
         this.timers.set(task.id, handle);

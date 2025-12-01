@@ -76,7 +76,8 @@ export class DevTools implements HyperSchedulerPlugin {
                 executionCount: task.executionCount || 0,
                 schedule: task.schedule,
                 tags: task.tags || [],
-                error: task.status === 'error' ? 'Execution failed' : null
+                error: task.status === 'error' ? 'Execution failed' : null,
+                driver: scheduler.getTaskDriver(task.id)
             }));
             },
             on: (evt: string, handler: (payload: any) => void) => {

@@ -31,6 +31,66 @@ scheduler.stop();
 | `debug` | `boolean` | `false` | 启用调试日志 |
 | `timezone` | `string` | 系统时区 | 全局时区 |
 | `maxHistory` | `number` | `50` | 历史记录上限 |
+| `driver` | `'worker' \| 'main'` | `'worker'` | 定时器驱动方式（仅浏览器） |
+
+### 定时器驱动方式
+
+在浏览器环境中，Hyper Scheduler 支持两种定时器驱动方式：
+
+**Worker 驱动（默认）**
+
+使用 Web Worker 在后台线程运行定时器：
+- ✅ 不受浏览器后台标签页节流限制
+- ✅ 定时更精确
+- ✅ 不阻塞主线程
+
+**主线程驱动**
+
+使用原生 `setTimeout` 在主线程运行定时器：
+- ✅ 实现更简单
+- ✅ 调试更方便
+- ⚠️ 后台标签页可能受节流影响
+
+#### 全局配置
+
+```typescript
+// 所有任务默认使用 Worker 驱动
+const scheduler = new Scheduler({ 
+  driver: 'worker' // 默认值，可省略
+});
+
+// 所有任务默认使用主线程驱动
+const scheduler = new Scheduler({ 
+  driver: 'main' 
+});
+```
+
+#### 任务级配置
+
+可以为单个任务指定不同的驱动方式，覆盖全局配置：
+
+```typescript
+const scheduler = new Scheduler({ driver: 'worker' });
+
+// 这个任务使用主线程驱动（覆盖全局配置）
+scheduler.createTask({
+  id: 'simple-task',
+  schedule: '5s',
+  handler: () => console.log('Hello'),
+  options: {
+    driver: 'main'
+  }
+});
+
+// 这个任务使用 Worker 驱动（继承全局配置）
+scheduler.createTask({
+  id: 'precise-task',
+  schedule: '1s',
+  handler: () => console.log('Precise!')
+});
+```
+
+> **注意**：Node.js 环境始终使用主线程 `setTimeout`，`driver` 配置无效。
 
 ---
 

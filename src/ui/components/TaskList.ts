@@ -55,6 +55,7 @@ export class TaskList extends HTMLElement {
           <th style="width:40px">#</th>
           <th style="min-width:150px">${t('list.idTags')}</th>
           <th style="width:100px">${t('list.status')}</th>
+          <th style="width:70px">${t('list.driver')}</th>
           <th style="width:100px">${t('list.schedule')}</th>
           <th style="width:60px">${t('list.count')}</th>
           <th style="width:100px">${t('list.lastRun')}</th>
@@ -119,6 +120,14 @@ export class TaskList extends HTMLElement {
     }) + '.' + date.getMilliseconds().toString().padStart(3, '0');
   }
 
+  private getDriverBadge(driver: 'worker' | 'main' | undefined): string {
+    const d = driver || 'worker';
+    if (d === 'worker') {
+      return `<span class="driver-badge worker" title="${t('list.driverWorker')}">W</span>`;
+    }
+    return `<span class="driver-badge main" title="${t('list.driverMain')}">M</span>`;
+  }
+
   private renderRows() {
     const tbody = this._shadow.querySelector('tbody');
     if (!tbody) return;
@@ -141,6 +150,7 @@ export class TaskList extends HTMLElement {
           </div>
         </td>
         <td>${this.getStatusIcon(task.status, task.id)}</td>
+        <td>${this.getDriverBadge((task as any).driver)}</td>
         <td>${this.formatSchedule(task.schedule)}</td>
         <td>${task.executionCount || 0}</td>
         <td>${this.formatTime(task.lastRun)}</td>
@@ -257,6 +267,27 @@ export class TaskList extends HTMLElement {
           color: var(--hs-text-secondary);
           font-style: italic;
         }
+        .driver-badge {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 22px;
+          height: 22px;
+          border-radius: 4px;
+          font-size: 11px;
+          font-weight: 600;
+          font-family: monospace;
+        }
+        .driver-badge.worker {
+          background: rgba(34, 197, 94, 0.15);
+          color: var(--hs-success);
+          border: 1px solid var(--hs-success);
+        }
+        .driver-badge.main {
+          background: rgba(245, 158, 11, 0.15);
+          color: var(--hs-warning);
+          border: 1px solid var(--hs-warning);
+        }
         .col-num {
           width: 40px;
           color: var(--hs-text-secondary);
@@ -331,6 +362,7 @@ export class TaskList extends HTMLElement {
               <th style="width:40px">#</th>
               <th style="min-width:150px">${t('list.idTags')}</th>
               <th style="width:100px">${t('list.status')}</th>
+              <th style="width:70px">${t('list.driver')}</th>
               <th style="width:100px">${t('list.schedule')}</th>
               <th style="width:60px">${t('list.count')}</th>
               <th style="width:100px">${t('list.lastRun')}</th>

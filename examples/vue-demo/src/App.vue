@@ -29,18 +29,24 @@ onMounted(() => {
     })]
   })
   
-  // Cron 任务 - 每 3 秒
+  // Cron 任务 - 每 3 秒（使用主线程驱动）
   scheduler.value.createTask({
     id: 'vue-cron',
     schedule: '*/3 * * * * *',
-    handler: () => addLog('✅ Cron 任务执行 (每3秒)')
+    handler: () => addLog('✅ Cron 任务执行 (每3秒)'),
+    options: {
+      driver: 'main'
+    }
   })
 
-  // 间隔任务 - 每 5 秒
+  // 间隔任务 - 每 5 秒（使用 Worker 驱动，默认）
   scheduler.value.createTask({
     id: 'vue-interval',
     schedule: '5s',
-    handler: () => addLog('✅ 间隔任务执行 (每5秒)')
+    handler: () => addLog('✅ 间隔任务执行 (每5秒)'),
+    options: {
+      driver: 'worker'
+    }
   })
 
   addLog('✨ Vue 应用已加载')
