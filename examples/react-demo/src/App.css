@@ -30,11 +30,16 @@ body {
   padding: 20px;
 }
 
+#root {
+  width: 100%;
+}
+
 .dashboard {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 24px;
-  width: 1000px;
+  width: 100%;
+  max-width: 1000px;
   height: 600px;
   background: var(--bg-color);
 }

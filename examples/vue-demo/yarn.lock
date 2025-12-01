@@ -468,7 +468,7 @@ he@^1.2.0:
 
 hyper-scheduler@^1.0.1:
   version "1.0.1"
-  resolved "https://registry.yarnpkg.com/hyper-scheduler/-/hyper-scheduler-1.0.1.tgz#5aaae3d54ad727799ce1f5c8bdc83d29a8b1a3c1"
+  resolved "https://registry.npmjs.org/hyper-scheduler/-/hyper-scheduler-1.0.1.tgz"
   integrity sha512-1hFjCJRPo3AI/bl2sMQ5GZlqnsT3FISjGmc32X2d3aJrMUVMeUVHonbi7kQ/fRfCcSVPP6Rh515zVldI4LRSPQ==
 
 magic-string@^0.30.21:

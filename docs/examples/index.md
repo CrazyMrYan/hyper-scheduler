@@ -2,6 +2,22 @@
 
 本示例展示了 `Hyper Scheduler` 的核心能力：**双线程任务调度**。你可以同时在主线程（Main Thread）和 Web Worker 线程中运行任务，互不干扰。
 
+## 在线演示
+
+以下示例展示了完全相同的“双线程心跳监控”逻辑在不同框架中的运行效果。你可以直接在这里交互，或点击右上角图标在新窗口打开。
+
+### Browser (原生 JS)
+
+<DemoFrame path="/examples/browser/" :devPort="3003" devPath="/examples/browser/index.html" title="examples/browser/index.html" />
+
+### Vue 3 Demo
+
+<DemoFrame path="/examples/vue-demo/" :devPort="3001" title="examples/vue-demo" />
+
+### React Demo
+
+<DemoFrame path="/examples/react-demo/" :devPort="3002" title="examples/react-demo" />
+
 ## 安装与引入
 
 ### 1. 安装
@@ -9,11 +25,11 @@
 使用你喜欢的包管理器安装 `hyper-scheduler`：
 
 ```bash
+# yarn (推荐)
+yarn add hyper-scheduler
+
 # npm
 npm install hyper-scheduler
-
-# yarn
-yarn add hyper-scheduler
 
 # pnpm
 pnpm add hyper-scheduler

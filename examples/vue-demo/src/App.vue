@@ -181,6 +181,10 @@ body {
   justify-content: center;
   padding: 20px;
 }
+
+#app {
+  width: 100%;
+}
 </style>
 
 <style scoped>
@@ -188,7 +192,8 @@ body {
   display: grid;
   grid-template-columns: 300px 1fr;
   gap: 24px;
-  width: 1000px;
+  width: 100%;
+  max-width: 1000px;
   height: 600px;
   background: var(--bg-color);
 }

@@ -1,0 +1,83 @@
+name: Deploy to GitHub Pages
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install & Build Core
+        run: |
+          yarn install --frozen-lockfile
+          yarn build
+
+      - name: Build Documentation
+        run: yarn docs:build
+
+      - name: Build React Demo
+        run: |
+          cd examples/react-demo
+          yarn install --frozen-lockfile
+          yarn build
+          # 移动构建产物到文档输出目录的子文件夹
+          mkdir -p ../../docs/.vitepress/dist/examples/react-demo
+          cp -r dist/* ../../docs/.vitepress/dist/examples/react-demo/
+
+      - name: Build Vue Demo
+        run: |
+          cd examples/vue-demo
+          yarn install --frozen-lockfile
+          yarn build
+          # 移动构建产物到文档输出目录的子文件夹
+          mkdir -p ../../docs/.vitepress/dist/examples/vue-demo
+          cp -r dist/* ../../docs/.vitepress/dist/examples/vue-demo/
+
+      - name: Build Browser Example
+        run: |
+          mkdir -p docs/.vitepress/dist/examples/browser
+          # 复制 HTML
+          cp examples/browser/index.html docs/.vitepress/dist/examples/browser/
+          # 复制核心库构建产物 (Browser 示例强依赖这个路径: ../../dist/index.umd.cjs)
+          # 为了保持路径引用有效，我们需要在 docs/.vitepress/dist 内部重建目录结构
+          # 浏览器示例引用是 src="../../dist/index.umd.cjs"
+          # 部署后路径为 /examples/browser/index.html
+          # 所以我们需要将 dist 放在 /dist
+          mkdir -p docs/.vitepress/dist/dist
+          cp dist/index.umd.cjs docs/.vitepress/dist/dist/
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: docs/.vitepress/dist
+
+  deploy:
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

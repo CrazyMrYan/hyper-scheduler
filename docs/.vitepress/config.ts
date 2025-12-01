@@ -9,6 +9,9 @@ export default defineConfig({
   ],
   themeConfig: {
     logo: '/logo.svg',
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/CrazyMrYan/hyper-scheduler' }
+    ],
     nav: [
       { text: '指南', link: '/guide/getting-started' }, // 更新导航文本
       { text: 'API 参考', link: '/api/scheduler' },     // 更新导航文本
