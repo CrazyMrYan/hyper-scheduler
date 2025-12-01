@@ -1,6 +1,7 @@
 import { defineConfig } from 'vitepress';
 
 export default defineConfig({
+  base: '/hyper-scheduler/', // 设置 GitHub Pages 的基础路径
   lang: 'zh-CN', // 设置语言为中文
   title: 'Hyper Scheduler', // 更新标题
   description: '轻量级全局任务调度 JavaScript 库。', // 更新描述
