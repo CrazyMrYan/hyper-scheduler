@@ -46,13 +46,6 @@ onMounted(() => {
     plugins: [new DevTools({ 
       theme: 'auto', 
       language: 'zh', 
-      dockPosition: 'bottom',
-      defaultZoom: 2,
-      trigger: {
-        position: 'bottom-left',
-        backgroundColor: '#10b981',
-        textColor: '#ffffff'
-      }
     })]
   })
   

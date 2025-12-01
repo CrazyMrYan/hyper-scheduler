@@ -7,6 +7,7 @@ function App() {
   const [isRunning, setIsRunning] = useState(false);
   const schedulerRef = useRef(null);
   const logBoxRef = useRef(null);
+  const isInitialized = useRef(false);
 
   const addLog = (msg, type = 'info') => {
     const time = new Date().toLocaleTimeString('zh-CN', { 
@@ -37,6 +38,9 @@ function App() {
   }, [logs]);
 
   useEffect(() => {
+    if (isInitialized.current) return;
+    isInitialized.current = true;
+
     // 准备插件
     const plugins = [];
     // 仅在开发模式下加载 DevTools，或者始终加载取决于需求

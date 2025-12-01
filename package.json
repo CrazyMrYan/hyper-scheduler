@@ -1,6 +1,6 @@
 {
   "name": "hyper-scheduler",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron expressions and Web Workers.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -12,6 +12,11 @@
       "require": "./dist/index.cjs"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "dev": "vite",
     "docs:dev": "vitepress dev docs",
@@ -21,6 +26,7 @@
     "example:vue": "npm install --prefix examples/vue-demo && npm run dev --prefix examples/vue-demo",
     "example:react": "npm install --prefix examples/react-demo && npm run dev --prefix examples/react-demo",
     "build": "tsc && vite build",
+    "prepublishOnly": "npm run build",
     "test": "vitest",
     "lint": "eslint . --ext .ts"
   },
