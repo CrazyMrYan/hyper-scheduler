@@ -73,6 +73,12 @@ const scheduler = new Scheduler({
 - 显示上次执行时间和下次执行时间
 - 按标签过滤任务
 - 搜索任务
+- **任务驱动 (Task Driver)**
+    - 在任务列表中，任务 ID 旁会显示一个标记：
+        - **`M`**: 表示该任务在 **主线程 (Main Thread)** 中运行。
+        - **`W`**: 表示该任务在 **Web Worker 线程** 中运行。
+    - 这允许你快速识别任务的执行上下文，特别是对于需要避免阻塞 UI 的繁重任务。
+    - **注意**：`driver` 是 `Scheduler` 或 `Task` 的配置选项，而不是 `DevTools` 本身的配置。`DevTools` 仅负责可视化其状态。
 
 ### 任务控制
 
@@ -218,62 +224,6 @@ new DevTools({
 - RGB：`'rgb(59, 130, 246)'`
 - RGBA：`'rgba(59, 130, 246, 0.8)'`
 - 颜色名：`'blue'`
-
-## 完整示例
-
-```typescript
-import { Scheduler, DevTools } from 'hyper-scheduler';
-
-const scheduler = new Scheduler({
-  debug: true,
-  plugins: [
-    new DevTools({
-      // 主题：跟随系统
-      theme: 'auto',
-      
-      // 停靠位置：底部
-      dockPosition: 'bottom',
-      
-      // 语言：中文
-      language: 'zh',
-      
-      // 时间线缩放：2倍
-      defaultZoom: 2,
-      
-      // 悬浮按钮：左下角，绿色
-      trigger: {
-        backgroundColor: '#10b981',
-        textColor: '#ffffff',
-        position: 'bottom-left'
-      }
-    })
-  ]
-});
-
-// 注册任务
-scheduler.createTask({
-  id: 'test-task',
-  schedule: '*/5 * * * * *',
-  handler: () => {
-    console.log('Task executed');
-  }
-});
-
-// 启动调度器
-scheduler.start();
-```
-
-## 注意事项
-
-1. **仅浏览器环境**：DevTools 仅在浏览器环境下可用，Node.js 环境会自动忽略。
-
-2. **性能影响**：DevTools 会记录任务执行历史和事件日志，在生产环境建议禁用或限制 `maxHistory`。
-
-3. **样式隔离**：DevTools 使用 Shadow DOM 确保样式不会影响主应用。
-
-4. **快捷键**：
-   - `Ctrl/Cmd + K` - 打开/关闭面板
-   - `Esc` - 关闭面板
 
 ## 相关链接
 

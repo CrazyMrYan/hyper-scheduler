@@ -9,9 +9,13 @@ export default defineConfig({
   ],
   themeConfig: {
     logo: '/logo.svg',
+    socialLinks: [
+      { icon: 'github', link: 'https://github.com/CrazyMrYan/hyper-scheduler' }
+    ],
     nav: [
       { text: '指南', link: '/guide/getting-started' }, // 更新导航文本
       { text: 'API 参考', link: '/api/scheduler' },     // 更新导航文本
+      { text: '示例演示', link: '/examples/' },
       // 多版本导航占位符 - 实际实现可能需要自定义组件或更复杂的配置
       {
         text: '版本',
@@ -28,6 +32,12 @@ export default defineConfig({
           { text: '快速开始', link: '/guide/getting-started' },
           { text: '核心概念', link: '/guide/core-concepts' },
           { text: '最佳实践', link: '/guide/best-practices' }
+        ]
+      },
+      {
+        text: '示例演示',
+        items: [
+          { text: '双线程心跳监控', link: '/examples/' }
         ]
       },
       {

@@ -15,7 +15,7 @@ A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron 
 - 🚀 **Cross-platform**: Works in Node.js and Browser.
 - ⏰ **Precise Timing**: Uses Web Workers in browser to avoid background throttling.
 - 🛠 **Debuggable**: Built-in debug panel and CLI output.
-- 📦 **Tiny**: < 10KB gzipped.
+- 📦 **Tiny**: < 20KB gzipped.
 
 ## Quick Start
 
