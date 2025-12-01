@@ -1,16 +1,17 @@
-import { DevToolsStore } from '../store/DevToolsStore';
+import { DevToolsStore } from '../store/dev-tools-store';
 import { SchedulerIntrospectionAPI, TaskControlAPI } from '../../types';
+import { SchedulerEvents } from '../../constants';
 import { themeStyles } from '../styles/theme.css';
-import './FloatingTrigger';
-import './TaskHeader';
-import './TaskList';
-import './TaskDetail';
-import './Timeline';
-import './Resizer';
-import { TaskHeader } from './TaskHeader';
-import { TaskList } from './TaskList';
-import { TaskDetail } from './TaskDetail';
-import { Timeline } from './Timeline';
+import './floating-trigger';
+import './task-header';
+import './task-list';
+import './task-detail';
+import './timeline';
+import './resizer';
+import { TaskHeader } from './task-header';
+import { TaskList } from './task-list';
+import { TaskDetail } from './task-detail';
+import { Timeline } from './timeline';
 
 export class DevTools extends HTMLElement {
   private _shadow: ShadowRoot;
@@ -106,31 +107,31 @@ export class DevTools extends HTMLElement {
       allTasks.forEach(t => this.store.updateTask(t));
     };
 
-    this.scheduler.on('task_registered', refreshTasks);
-    this.scheduler.on('task_updated', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_REGISTERED, refreshTasks);
+    this.scheduler.on(SchedulerEvents.TASK_UPDATED, (payload: any) => {
       console.log('[DevTools] task_updated event:', payload);
       refreshTasks();
     });
-    this.scheduler.on('task_started', refreshTasks);
-    this.scheduler.on('task_removed', refreshTasks);
-    this.scheduler.on('task_stopped', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_STARTED, refreshTasks);
+    this.scheduler.on(SchedulerEvents.TASK_REMOVED, refreshTasks);
+    this.scheduler.on(SchedulerEvents.TASK_STOPPED, (payload: any) => {
       console.log('[DevTools] task_stopped event:', payload);
       refreshTasks();
     });
     
     // Listen to scheduler start/stop events
-    this.scheduler.on('scheduler_started', () => {
+    this.scheduler.on(SchedulerEvents.SCHEDULER_STARTED, () => {
       console.log('[DevTools] scheduler_started event');
       this.store.setSchedulerRunning(true);
       refreshTasks();
     });
-    this.scheduler.on('scheduler_stopped', () => {
+    this.scheduler.on(SchedulerEvents.SCHEDULER_STOPPED, () => {
       console.log('[DevTools] scheduler_stopped event');
       this.store.setSchedulerRunning(false);
       refreshTasks();
     });
 
-    this.scheduler.on('task_completed', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_COMPLETED, (payload: any) => {
       refreshTasks();
       
       // Add to history
@@ -144,7 +145,7 @@ export class DevTools extends HTMLElement {
       }
     });
 
-    this.scheduler.on('task_failed', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_FAILED, (payload: any) => {
       refreshTasks();
       
       // Add to history

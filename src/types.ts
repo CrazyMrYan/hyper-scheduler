@@ -1,4 +1,6 @@
-export type TaskStatus = 'idle' | 'running' | 'stopped' | 'error';
+import { TaskStatus as TaskStatusEnum } from './constants';
+
+export type TaskStatus = typeof TaskStatusEnum[keyof typeof TaskStatusEnum];
 
 export interface ExecutionRecord {
   timestamp: number;

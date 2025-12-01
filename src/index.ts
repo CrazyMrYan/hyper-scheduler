@@ -1,10 +1,11 @@
-import { Scheduler as CoreScheduler, TimerStrategyFactory } from './core/Scheduler';
+import { Scheduler as CoreScheduler, TimerStrategyFactory } from './core/scheduler';
 import { SchedulerConfig } from './types';
-import { NodeTimer } from './platform/node/NodeTimer';
-import { BrowserTimer } from './platform/browser/BrowserTimer';
-import { MainThreadTimer } from './platform/browser/MainThreadTimer';
-import { TimerStrategy } from './platform/TimerStrategy';
-import { DevTools } from './plugins/DevTools';
+import { NodeTimer } from './platform/node/node-timer';
+import { BrowserTimer } from './platform/browser/browser-timer';
+import { MainThreadTimer } from './platform/browser/main-thread-timer';
+import { TimerStrategy } from './platform/timer-strategy';
+import { DevTools } from './plugins/dev-tools';
+import { TaskStatus, SchedulerEvents } from './constants';
 
 // Determine environment
 const isBrowser = typeof window !== 'undefined' && typeof window.document !== 'undefined';
@@ -70,4 +71,4 @@ export class Scheduler extends CoreScheduler {
 }
 
 export * from './types';
-export { CoreScheduler, DevTools };
+export { CoreScheduler, DevTools, TaskStatus, SchedulerEvents };

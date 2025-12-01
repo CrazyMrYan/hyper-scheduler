@@ -1,6 +1,7 @@
 import { SchedulerConfig, Task, TaskDefinition, ExecutionRecord } from '../types';
-import { TaskRegistry } from './TaskRegistry';
-import { TimerStrategy } from '../platform/TimerStrategy';
+import { TaskStatus, SchedulerEvents } from '../constants';
+import { TaskRegistry } from './task-registry';
+import { TimerStrategy } from '../platform/timer-strategy';
 import { validateId } from '../utils/id';
 import { parseSchedule, getNextRun as getNextScheduleRun } from '../utils/schedule'; // 替换为新的 schedule 工具
 import { RetryStrategy } from './retry-strategy';
@@ -142,19 +143,19 @@ export class Scheduler {
       ...definition,
       tags: definition.tags || [],
       // 新创建的任务默认是 stopped 状态，需要手动启动或等调度器启动
-      status: 'stopped',
+      status: TaskStatus.STOPPED,
       history: [],
       executionCount: 0,
     };
 
     this.registry.addTask(task);
     this.log(`Task created: ${task.id}`);
-    this.emit('task_registered', { taskId: task.id, task });
+    this.emit(SchedulerEvents.TASK_REGISTERED, { taskId: task.id, task });
     this.notify();
 
     // 如果调度器已经在运行，自动启动新任务
     if (this.running) {
-      task.status = 'idle';
+      task.status = TaskStatus.IDLE;
       this.scheduleTask(task);
     }
   }
@@ -169,7 +170,7 @@ export class Scheduler {
     const deleted = this.registry.deleteTask(id);
     if (deleted) {
       this.log(`Task deleted: ${id}`);
-      this.emit('task_removed', { taskId: id });
+      this.emit(SchedulerEvents.TASK_REMOVED, { taskId: id });
       this.notify();
     }
     return deleted;
@@ -186,7 +187,7 @@ export class Scheduler {
       throw new Error(`Task not found: ${id}`);
     }
 
-    if (task.status === 'running') {
+    if (task.status === TaskStatus.RUNNING) {
       return; // Already running
     }
 
@@ -197,9 +198,9 @@ export class Scheduler {
       this.timers.delete(id);
     }
 
-    task.status = 'idle'; // Reset status if it was stopped or error
+    task.status = TaskStatus.IDLE; // Reset status if it was stopped or error
     this.log(`Starting task: ${id}`);
-    this.emit('task_started', { taskId: id, task });
+    this.emit(SchedulerEvents.TASK_STARTED, { taskId: id, task });
     this.notify();
     
     // Schedule task even if scheduler is not running (individual task control)
@@ -230,7 +231,7 @@ export class Scheduler {
       this.timers.set(task.id, handle);
     } catch (err) {
       this.log(`Error scheduling task ${task.id}: ${err}`);
-      task.status = 'error';
+      task.status = TaskStatus.ERROR;
       this.notify();
     }
   }
@@ -242,15 +243,15 @@ export class Scheduler {
     this.timers.delete(task.id);
 
     // Check if task was stopped
-    if (task.status === 'stopped') return;
+    if (task.status === TaskStatus.STOPPED) return;
 
-    task.status = 'running';
+    task.status = TaskStatus.RUNNING;
     task.lastRun = Date.now();
     task.executionCount = (task.executionCount || 0) + 1;
     const startTime = Date.now();
 
     this.log(`Executing task: ${task.id} (Attempt ${attempt})`);
-    this.emit('task_started', { taskId: task.id, task });
+    this.emit(SchedulerEvents.TASK_STARTED, { taskId: task.id, task });
     this.notify();
 
     try {
@@ -263,9 +264,9 @@ export class Scheduler {
         success: true,
       });
       
-      task.status = 'idle';
+      task.status = TaskStatus.IDLE;
       this.log(`Task execution success: ${task.id}`);
-      this.emit('task_completed', { taskId: task.id, task, duration });
+      this.emit(SchedulerEvents.TASK_COMPLETED, { taskId: task.id, task, duration });
       this.notify();
       
       // Schedule next run
@@ -281,7 +282,7 @@ export class Scheduler {
       });
 
       this.log(`Task execution failed: ${task.id} - ${err.message}`);
-      this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
+      this.emit(SchedulerEvents.TASK_FAILED, { taskId: task.id, task, error: err.message, duration });
       
       // 调用任务的 onError 回调
       if (task.options?.onError) {
@@ -301,10 +302,10 @@ export class Scheduler {
             this.executeTaskIndividual(task, attempt + 1);
         }, retryDelay);
         this.timers.set(task.id, handle);
-        task.status = 'error';
+        task.status = TaskStatus.ERROR;
         this.notify();
       } else {
-        task.status = 'error';
+        task.status = TaskStatus.ERROR;
         this.notify();
         // Schedule next regular run
         this.scheduleTaskForce(task); 
@@ -329,9 +330,9 @@ export class Scheduler {
     }
 
     if (task) {
-      task.status = 'stopped';
+      task.status = TaskStatus.STOPPED;
       this.log(`Task stopped: ${id}`);
-      this.emit('task_stopped', { taskId: id, task });
+      this.emit(SchedulerEvents.TASK_STOPPED, { taskId: id, task });
       this.notify();
     }
   }
@@ -383,17 +384,17 @@ export class Scheduler {
   async triggerTask(id: string): Promise<void> {
     const task = this.getTask(id);
     if (!task) return;
-    if (task.status === 'running') return;
+    if (task.status === TaskStatus.RUNNING) return;
     
     const previousStatus = task.status;
     
-    task.status = 'running';
+    task.status = TaskStatus.RUNNING;
     task.lastRun = Date.now();
     task.executionCount = (task.executionCount || 0) + 1;
     const startTime = Date.now();
 
     this.log(`Triggering task: ${task.id}`);
-    this.emit('task_started', { taskId: task.id, task });
+    this.emit(SchedulerEvents.TASK_STARTED, { taskId: task.id, task });
     this.notify();
 
     try {
@@ -409,7 +410,7 @@ export class Scheduler {
       // 恢复到之前的状态
       task.status = previousStatus;
       this.log(`Task trigger success: ${task.id}`);
-      this.emit('task_completed', { taskId: task.id, task, duration });
+      this.emit(SchedulerEvents.TASK_COMPLETED, { taskId: task.id, task, duration });
       this.notify();
 
     } catch (err: any) {
@@ -422,7 +423,7 @@ export class Scheduler {
       });
 
       this.log(`Task trigger failed: ${task.id} - ${err.message}`);
-      this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
+      this.emit(SchedulerEvents.TASK_FAILED, { taskId: task.id, task, error: err.message, duration });
       
       // 恢复到之前的状态
       task.status = previousStatus;
@@ -438,15 +439,15 @@ export class Scheduler {
     if (this.running) return;
     this.running = true;
     this.log('Scheduler started');
-    this.emit('scheduler_started', { running: true });
+    this.emit(SchedulerEvents.SCHEDULER_STARTED, { running: true });
     this.registry.getAllTasks().forEach((task) => {
       // 启动所有 stopped 状态的任务（新创建的任务默认是 stopped）
-      if (task.status === 'stopped') {
-        task.status = 'idle';
-        this.emit('task_updated', { taskId: task.id, task });
+      if (task.status === TaskStatus.STOPPED) {
+        task.status = TaskStatus.IDLE;
+        this.emit(SchedulerEvents.TASK_UPDATED, { taskId: task.id, task });
       }
       // 调度所有非 running 状态的任务
-      if (task.status !== 'running') {
+      if (task.status !== TaskStatus.RUNNING) {
         this.scheduleTask(task);
       }
     });
@@ -460,7 +461,7 @@ export class Scheduler {
   stop(): void {
     this.running = false;
     this.log('Scheduler stopped');
-    this.emit('scheduler_stopped', { running: false });
+    this.emit(SchedulerEvents.SCHEDULER_STOPPED, { running: false });
     
     // Cancel all timers using appropriate strategy for each task
     this.timers.forEach((handle, taskId) => {
@@ -475,9 +476,9 @@ export class Scheduler {
     
     // 将所有非 stopped 状态的任务标记为 stopped
     this.registry.getAllTasks().forEach((task) => {
-      if (task.status !== 'stopped') {
-        task.status = 'stopped';
-        this.emit('task_updated', { taskId: task.id, task });
+      if (task.status !== TaskStatus.STOPPED) {
+        task.status = TaskStatus.STOPPED;
+        this.emit(SchedulerEvents.TASK_UPDATED, { taskId: task.id, task });
       }
     });
     
@@ -485,7 +486,7 @@ export class Scheduler {
   }
 
   private scheduleTask(task: Task): void {
-    if (!this.running && task.status !== 'running') return;
+    if (!this.running && task.status !== TaskStatus.RUNNING) return;
 
     try {
       // 使用新的 getNextScheduleRun
@@ -508,22 +509,22 @@ export class Scheduler {
       this.timers.set(task.id, handle);
     } catch (err) {
       this.log(`Error scheduling task ${task.id}: ${err}`);
-      task.status = 'error';
+      task.status = TaskStatus.ERROR;
     }
   }
 
   private async executeTask(task: Task, attempt: number = 0, force: boolean = false): Promise<void> {
     this.timers.delete(task.id);
 
-    if (!force && (!this.running || task.status === 'stopped')) return;
+    if (!force && (!this.running || task.status === TaskStatus.STOPPED)) return;
 
-    task.status = 'running';
+    task.status = TaskStatus.RUNNING;
     task.lastRun = Date.now();
     task.executionCount = (task.executionCount || 0) + 1;
     const startTime = Date.now();
 
     this.log(`Executing task: ${task.id} (Attempt ${attempt})`);
-    this.emit('task_started', { taskId: task.id, task });
+    this.emit(SchedulerEvents.TASK_STARTED, { taskId: task.id, task });
     this.notify();
 
     try {
@@ -536,9 +537,9 @@ export class Scheduler {
         success: true,
       });
       
-      task.status = 'idle';
+      task.status = TaskStatus.IDLE;
       this.log(`Task execution success: ${task.id}`);
-      this.emit('task_completed', { taskId: task.id, task, duration });
+      this.emit(SchedulerEvents.TASK_COMPLETED, { taskId: task.id, task, duration });
       this.notify();
       
       // Schedule next run
@@ -554,7 +555,7 @@ export class Scheduler {
       });
 
       this.log(`Task execution failed: ${task.id} - ${err.message}`);
-      this.emit('task_failed', { taskId: task.id, task, error: err.message, duration });
+      this.emit(SchedulerEvents.TASK_FAILED, { taskId: task.id, task, error: err.message, duration });
       
       // 调用任务的 onError 回调
       if (task.options?.onError) {
@@ -574,10 +575,10 @@ export class Scheduler {
             this.executeTask(task, attempt + 1);
         }, retryDelay);
         this.timers.set(task.id, handle);
-        task.status = 'error';
+        task.status = TaskStatus.ERROR;
         this.notify();
       } else {
-        task.status = 'error';
+        task.status = TaskStatus.ERROR;
         this.notify();
         // Schedule next regular run even if failed
         this.scheduleTask(task); 
