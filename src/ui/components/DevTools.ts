@@ -1,16 +1,17 @@
-import { DevToolsStore } from '../store/DevToolsStore';
+import { DevToolsStore } from '../store/dev-tools-store';
 import { SchedulerIntrospectionAPI, TaskControlAPI } from '../../types';
+import { SchedulerEvents } from '../../constants';
 import { themeStyles } from '../styles/theme.css';
-import './FloatingTrigger';
-import './TaskHeader';
-import './TaskList';
-import './TaskDetail';
-import './Timeline';
-import './Resizer';
-import { TaskHeader } from './TaskHeader';
-import { TaskList } from './TaskList';
-import { TaskDetail } from './TaskDetail';
-import { Timeline } from './Timeline';
+import './floating-trigger';
+import './task-header';
+import './task-list';
+import './task-detail';
+import './timeline';
+import './resizer';
+import { TaskHeader } from './task-header';
+import { TaskList } from './task-list';
+import { TaskDetail } from './task-detail';
+import { Timeline } from './timeline';
 
 export class DevTools extends HTMLElement {
   private _shadow: ShadowRoot;
@@ -47,6 +48,7 @@ export class DevTools extends HTMLElement {
     
     // Apply initial options from attributes (after bindStore so listeners are set up)
     const dockAttr = this.getAttribute('dock');
+    console.log('[DevTools] dock attribute:', dockAttr);
     if (dockAttr === 'bottom') {
       this.store.setDockPosition('bottom');
     }
@@ -59,6 +61,24 @@ export class DevTools extends HTMLElement {
     // Set language again through store to trigger UI updates for already rendered components
     if (languageAttr === 'en' || languageAttr === 'zh') {
       this.store.setLanguage(languageAttr);
+    }
+    
+    // Apply trigger button options
+    const triggerBg = this.getAttribute('trigger-bg');
+    const triggerColor = this.getAttribute('trigger-color');
+    const triggerPosition = this.getAttribute('trigger-position');
+    console.log('[DevTools] trigger attrs:', { triggerBg, triggerColor, triggerPosition });
+    if (triggerBg) this.$trigger.setAttribute('bg-color', triggerBg);
+    if (triggerColor) this.$trigger.setAttribute('text-color', triggerColor);
+    if (triggerPosition) this.$trigger.setAttribute('position', triggerPosition);
+    
+    // Apply default zoom to timeline
+    const defaultZoom = this.getAttribute('default-zoom');
+    if (defaultZoom) {
+      const zoom = parseFloat(defaultZoom);
+      if (!isNaN(zoom) && zoom >= 0.5 && zoom <= 5) {
+        this.$timeline.defaultZoom = zoom;
+      }
     }
     
     this.addEventListeners();
@@ -76,6 +96,10 @@ export class DevTools extends HTMLElement {
     // Initial load - fetch immediately
     const tasks = this.scheduler.getTasks();
     tasks.forEach(t => this.store.updateTask(t));
+    
+    // Get initial scheduler running state
+    const isRunning = this.scheduler.isRunning();
+    this.store.setSchedulerRunning(isRunning);
 
     // Subscribe to ALL events and refresh task list
     const refreshTasks = () => {
@@ -83,19 +107,31 @@ export class DevTools extends HTMLElement {
       allTasks.forEach(t => this.store.updateTask(t));
     };
 
-    this.scheduler.on('task_registered', refreshTasks);
-    this.scheduler.on('task_updated', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_REGISTERED, refreshTasks);
+    this.scheduler.on(SchedulerEvents.TASK_UPDATED, (payload: any) => {
       console.log('[DevTools] task_updated event:', payload);
       refreshTasks();
     });
-    this.scheduler.on('task_started', refreshTasks);
-    this.scheduler.on('task_removed', refreshTasks);
-    this.scheduler.on('task_stopped', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_STARTED, refreshTasks);
+    this.scheduler.on(SchedulerEvents.TASK_REMOVED, refreshTasks);
+    this.scheduler.on(SchedulerEvents.TASK_STOPPED, (payload: any) => {
       console.log('[DevTools] task_stopped event:', payload);
       refreshTasks();
     });
+    
+    // Listen to scheduler start/stop events
+    this.scheduler.on(SchedulerEvents.SCHEDULER_STARTED, () => {
+      console.log('[DevTools] scheduler_started event');
+      this.store.setSchedulerRunning(true);
+      refreshTasks();
+    });
+    this.scheduler.on(SchedulerEvents.SCHEDULER_STOPPED, () => {
+      console.log('[DevTools] scheduler_stopped event');
+      this.store.setSchedulerRunning(false);
+      refreshTasks();
+    });
 
-    this.scheduler.on('task_completed', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_COMPLETED, (payload: any) => {
       refreshTasks();
       
       // Add to history
@@ -109,7 +145,7 @@ export class DevTools extends HTMLElement {
       }
     });
 
-    this.scheduler.on('task_failed', (payload: any) => {
+    this.scheduler.on(SchedulerEvents.TASK_FAILED, (payload: any) => {
       refreshTasks();
       
       // Add to history
@@ -306,6 +342,10 @@ export class DevTools extends HTMLElement {
     this.store.subscribe('filterText', (text) => {
       const tasks = this.store.getState().tasks;
       this.$taskList.filter(text, tasks);
+    });
+
+    this.store.subscribe('schedulerRunning', (running) => {
+      this.$header.schedulerRunning = running;
     });
   }
 

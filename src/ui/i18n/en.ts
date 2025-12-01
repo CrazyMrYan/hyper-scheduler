@@ -12,7 +12,10 @@ export const en = {
     status: 'Status',
     active: 'Active',
     total: 'Total',
-    mainThread: 'Main Thread'
+    mainThread: 'Main Thread',
+    scheduler: 'Scheduler',
+    running: 'Running',
+    stopped: 'Stopped'
   },
   tabs: {
     tasks: 'Tasks List',
@@ -21,6 +24,9 @@ export const en = {
   list: {
     idTags: 'ID / Tags',
     status: 'Status',
+    driver: 'Driver',
+    driverWorker: 'Worker (Web Worker)',
+    driverMain: 'Main (setTimeout)',
     schedule: 'Schedule',
     count: 'Count',
     lastRun: 'Last Run',

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { DevToolsStore } from '../../../src/ui/store/DevToolsStore';
+import { DevToolsStore } from '../../../src/ui/store/dev-tools-store';
 
 describe('DevToolsStore', () => {
   let store: DevToolsStore;

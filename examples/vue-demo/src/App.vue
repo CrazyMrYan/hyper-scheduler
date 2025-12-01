@@ -16,21 +16,37 @@ onMounted(() => {
   // 创建调度器 - DevTools 仅在开发环境加载
   scheduler.value = new Scheduler({ 
     debug: true,
-    plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
+    plugins: [new DevTools({ 
+      theme: 'auto', 
+      language: 'zh', 
+      dockPosition: 'bottom',
+      defaultZoom: 2,
+      trigger: {
+        position: 'bottom-left',  // 右下角
+        backgroundColor: '#10b981',  // 绿色背景
+        textColor: '#ffffff'         // 白色文字
+      }
+    })]
   })
   
-  // Cron 任务 - 每 3 秒
+  // Cron 任务 - 每 3 秒（使用主线程驱动）
   scheduler.value.createTask({
     id: 'vue-cron',
     schedule: '*/3 * * * * *',
-    handler: () => addLog('✅ Cron 任务执行 (每3秒)')
+    handler: () => addLog('✅ Cron 任务执行 (每3秒)'),
+    options: {
+      driver: 'main'
+    }
   })
 
-  // 间隔任务 - 每 5 秒
+  // 间隔任务 - 每 5 秒（使用 Worker 驱动，默认）
   scheduler.value.createTask({
     id: 'vue-interval',
     schedule: '5s',
-    handler: () => addLog('✅ 间隔任务执行 (每5秒)')
+    handler: () => addLog('✅ 间隔任务执行 (每5秒)'),
+    options: {
+      driver: 'worker'
+    }
   })
 
   addLog('✨ Vue 应用已加载')

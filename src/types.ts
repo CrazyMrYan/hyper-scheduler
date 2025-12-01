@@ -1,4 +1,6 @@
-export type TaskStatus = 'idle' | 'running' | 'stopped' | 'error';
+import { TaskStatus as TaskStatusEnum } from './constants';
+
+export type TaskStatus = typeof TaskStatusEnum[keyof typeof TaskStatusEnum];
 
 export interface ExecutionRecord {
   timestamp: number;
@@ -16,6 +18,13 @@ export interface TaskOptions {
   timezone?: string;
   /** 任务执行失败时的错误处理回调 */
   onError?: (error: Error, taskId: string) => void;
+  /**
+   * 定时器驱动方式（仅浏览器环境有效）
+   * - 'worker': 使用 Web Worker（默认，更精确，不受后台节流影响）
+   * - 'main': 使用主线程 setTimeout（更简单，但可能受后台节流影响）
+   * 如果不指定，则使用调度器全局配置
+   */
+  driver?: 'worker' | 'main';
 }
 
 export interface TaskDefinition {
@@ -46,6 +55,12 @@ export interface SchedulerConfig {
   maxHistory?: number;
   timezone?: string; // e.g., 'Asia/Shanghai'
   plugins?: HyperSchedulerPlugin[];
+  /**
+   * 定时器驱动方式（仅浏览器环境有效）
+   * - 'worker': 使用 Web Worker（默认，更精确，不受后台节流影响）
+   * - 'main': 使用主线程 setTimeout（更简单，但可能受后台节流影响）
+   */
+  driver?: 'worker' | 'main';
 }
 
 export interface HyperSchedulerPlugin {
@@ -63,6 +78,7 @@ export interface TaskSnapshot {
   schedule: string;
   tags: string[];
   error: string | null;
+  driver: 'worker' | 'main';
 }
 
 export interface DevToolsOptions {
@@ -95,4 +111,5 @@ export interface TaskControlAPI {
 export interface SchedulerIntrospectionAPI {
   getTasks(): TaskSnapshot[];
   on(event: string, handler: (data: any) => void): () => void;
+  isRunning(): boolean;
 }

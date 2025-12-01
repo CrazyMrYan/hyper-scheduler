@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
-import { Scheduler } from '../../src/core/Scheduler';
-import { NodeTimer } from '../../src/platform/node/NodeTimer';
+import { Scheduler } from '../../src/core/scheduler';
+import { NodeTimer } from '../../src/platform/node/node-timer';
 import { HyperSchedulerPlugin } from '../../src/types';
 
 describe('Scheduler Constructor Plugin Loading', () => {

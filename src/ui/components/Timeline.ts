@@ -50,6 +50,17 @@ export class Timeline extends HTMLElement {
     this._history = val.history;
   }
 
+  set defaultZoom(val: number) {
+    if (val >= 0.5 && val <= 5) {
+      this.zoom = val;
+      this.timeRange = 60 * 1000 / this.zoom;
+      // 更新 slider 和 label
+      const zoomSlider = this._shadow.querySelector('.zoom-slider') as HTMLInputElement;
+      if (zoomSlider) zoomSlider.value = val.toString();
+      this.updateZoomLabel();
+    }
+  }
+
   // Method to update texts when language changes
   updateTexts() {
     this.updateZoomLabel();
@@ -198,7 +209,7 @@ export class Timeline extends HTMLElement {
     ctx.fillText(t('timeline.timeRange', { n: Math.round(this.timeRange / 1000) }), 10, 15);
   }
 
-  private drawTaskRow(taskId: string, y: number, width: number, labelWidth: number, startTime: number, endTime: number, textColor: string, textSecondary: string, borderColor: string, successColor: string, dangerColor: string) {
+  private drawTaskRow(taskId: string, y: number, width: number, labelWidth: number, startTime: number, endTime: number, textColor: string, _textSecondary: string, borderColor: string, successColor: string, dangerColor: string) {
     const ctx = this.ctx;
     const timelineWidth = width - labelWidth - 20;
     
@@ -208,9 +219,11 @@ export class Timeline extends HTMLElement {
     ctx.textAlign = 'left';
     ctx.fillText(taskId, 10, y + 15);
     
-    // Draw driver indicator
-    const driver = 'W'; // TODO: get from task config
-    ctx.fillStyle = textSecondary;
+    // Draw driver indicator - get from task snapshot
+    const task = this._tasks.get(taskId);
+    const driver = (task as any)?.driver === 'main' ? 'M' : 'W';
+    const driverColor = driver === 'W' ? '#22c55e' : '#f59e0b';
+    ctx.fillStyle = driverColor;
     ctx.font = '9px monospace';
     ctx.fillText(`[${driver}]`, 10, y + 28);
     

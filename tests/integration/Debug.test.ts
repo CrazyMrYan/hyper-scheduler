@@ -4,7 +4,7 @@ import { Scheduler } from '../../src/index';
     // We should update this test to test the new DevTools plugin.
     import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
     import { Scheduler } from '../../src/index';
-    import { DevTools } from '../../src/plugins/DevTools';
+    import { DevTools } from '../../src/plugins/dev-tools';
     
     describe('Debug Integration', () => {
       beforeEach(() => {    document.body.innerHTML = ''; // Clear DOM
