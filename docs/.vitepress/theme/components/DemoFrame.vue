@@ -1,5 +1,8 @@
 <script setup>
 import { defineProps, computed, ref, onMounted } from 'vue';
+import { useData } from 'vitepress';
+
+const { site } = useData();
 
 const props = defineProps({
   path: {
@@ -28,17 +31,14 @@ const src = computed(() => {
     return `http://localhost:${props.devPort}${props.devPath}`;
   }
   
-  // 否则（生产环境构建或未指定端口），使用相对路径
-  // 假设 base 路径已正确配置，直接指向 /examples/...
-  // 注意：VitePress 构建后的路径结构是平级的
-  // docs/.vitepress/dist/examples/vue-demo
-  // 访问路径通常是 base + examples/vue-demo/
+  // 否则（生产环境构建或未指定端口），使用相对路径，并加上 base
+  const base = site.value.base || '/';
+  // 移除 path 开头的 /，避免双重斜杠或绝对路径问题
+  const cleanPath = props.path.startsWith('/') ? props.path.slice(1) : props.path;
+  // 确保 base 以 / 结尾
+  const cleanBase = base.endsWith('/') ? base : `${base}/`;
   
-  // 这里需要处理 base 路径。如果在 GitHub Pages 上部署到 /repo/，base 就是 /repo/
-  // 使用 withBase 辅助函数是最佳实践，但这里我们在 iframe src 中直接拼接
-  
-  // 简单起见，假设部署结构保持 /examples/xxx
-  return props.path;
+  return `${cleanBase}${cleanPath}`;
 });
 </script>
 

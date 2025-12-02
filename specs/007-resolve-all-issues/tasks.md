@@ -43,9 +43,8 @@ sue #13)。
 
 - [x] T015 [US3] 更新 `DevToolsOptions` 接口，添加 `zoomStep` 配置 (Issue #12)。                         
 
-- [x] T016 [US3] 修改 `src/ui/components/timeline.ts`，支持 `zoomStep` 配置并优化缩放逻辑。
-- [ ] T017 [US3] 在 DevTools UI 中增加按命名空间筛选/查看任务的功能。
-
+- [x] T016 [US3] 修改 `src/ui/components/timeline.ts`，支持 `zoomStep` 配置并优化缩放逻辑。              
+- [x] T017 [US3] 在 DevTools UI 中增加按命名空间筛选/查看任务的功能。
 ## 阶段 4: 文档修复与收尾
 
 **目标**: 修复部署问题并更新文档。
