@@ -101,6 +101,11 @@ export interface DevToolsOptions {
   language?: 'en' | 'zh';
   /** 时间线默认缩放级别 (0.5-5) */
   defaultZoom?: number;
+  /**
+   * 缩放时间步长 (单位毫秒)
+   * 默认值: 1000 (1秒)
+   */
+  zoomStep?: number;
   /** 悬浮按钮配置 */
   trigger?: {
     /** 背景色 */
