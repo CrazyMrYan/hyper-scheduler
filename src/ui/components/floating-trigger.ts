@@ -305,7 +305,7 @@ export class FloatingTrigger extends HTMLElement {
       bottom: var(--hs-trigger-bottom, ${this._position.includes('bottom') ? '20px' : 'auto'});
       left: var(--hs-trigger-left, ${this._position.includes('left') ? '20px' : 'auto'});
       right: var(--hs-trigger-right, ${this._position.includes('right') ? '20px' : 'auto'});
-      transform: ${this._isCollapsed ? 'translateX(calc(100% - 12px))' : 'translateX(0)'};
+      transform: translateX(0);
     `;
     
     // 自定义颜色
@@ -382,26 +382,32 @@ export class FloatingTrigger extends HTMLElement {
 
         /* 收起状态样式 */
         button.collapsed {
-          width: 36px;
-          height: 36px;
-          border-radius: 18px 0 0 18px;
-          transform: translateX(calc(100% - 12px));
-          opacity: 0.8;
+          width: 24px;
+          height: 48px;
+          border-radius: 12px 0 0 12px;
+          transform: none; /* 完全展示，不再隐藏 */
+          opacity: 1;
+          right: 0 !important; /* 强制右对齐 */
+          left: auto !important;
         }
         button.collapsed:hover {
-          transform: translateX(calc(100% - 24px)); /* hover 时稍微伸出一点 */
+          width: 28px; /* hover 时稍微变宽 */
           opacity: 1;
         }
         button.collapsed .icon {
           display: none;
         }
         button.collapsed .collapse-btn {
-          right: auto;
-          left: 0;
-          border-radius: 18px 0 0 0;
+          position: static; /* 充满父容器 */
+          width: 100%;
+          height: 100%;
+          border-radius: 0;
+          background: transparent;
         }
         button.collapsed .collapse-btn::before {
-          content: '›'; /* 展开图标 */
+          content: '‹'; /* 展开图标 (左箭头) */
+          font-size: 20px;
+          line-height: 48px;
         }
       </style>
       <button title="Toggle Hyper Scheduler DevTools">
