@@ -17,6 +17,10 @@ export class FloatingTrigger extends HTMLElement {
   private _offsetX = 0;
   private _offsetY = 0;
   private _isCollapsed = false; // 新增：收起状态
+  
+  // 内部状态：保存展开时的位置
+  private _savedX = 0;
+  private _savedY = 0;
 
   static get observedAttributes() {
     return ['position', 'bg-color', 'text-color'];
@@ -31,7 +35,11 @@ export class FloatingTrigger extends HTMLElement {
     this.loadState(); // 加载保存的状态
     this.render();
     this.addEventListeners();
-    this.applyPosition(); // 首次渲染后应用位置和状态
+    
+    // 延迟一帧应用位置，确保 DOM 渲染完成且 CSS transition 生效前初始化位置
+    requestAnimationFrame(() => {
+       this.applyPosition();
+    });
     
     // 监听 resize 事件，重新计算位置以防止出界
     window.addEventListener('resize', this.onResize.bind(this));
@@ -48,7 +56,10 @@ export class FloatingTrigger extends HTMLElement {
   attributeChangedCallback(name: string, _oldVal: string, newVal: string) {
     if (name === 'position') {
       this._position = newVal || 'bottom-right';
-      this.applyPosition(); // 位置变化时重新应用
+      // 仅当未手动移动过时才重置位置
+      if (!this.style.getPropertyValue('--hs-trigger-position-set')) {
+          this.resetPositionToDefault();
+      }
     } else if (name === 'bg-color') {
       this._bgColor = newVal || '';
       this.updateStyles();
@@ -63,100 +74,80 @@ export class FloatingTrigger extends HTMLElement {
       const savedPos = localStorage.getItem(STORAGE_KEY_POS);
       if (savedPos) {
         const { x, y } = JSON.parse(savedPos);
-        this.style.setProperty('--hs-trigger-left', `${x}px`);
-        this.style.setProperty('--hs-trigger-top', `${y}px`);
-        this.style.setProperty('--hs-trigger-position-set', 'true'); // 标记已设置位置
+        this._savedX = parseFloat(x);
+        this._savedY = parseFloat(y);
+        this.style.setProperty('--hs-trigger-position-set', 'true');
+      } else {
+          this.resetPositionToDefault();
       }
+
       const savedCollapsed = localStorage.getItem(STORAGE_KEY_COLLAPSED);
       if (savedCollapsed === 'true') {
         this._isCollapsed = true;
       }
     } catch (e) {
       console.warn('[FloatingTrigger] Failed to load state:', e);
+      this.resetPositionToDefault();
     }
   }
 
-  private saveState() {
-    const button = this._shadow.querySelector('button')!;
-    if (!button) return;
-    
-    localStorage.setItem(STORAGE_KEY_COLLAPSED, String(this._isCollapsed));
+  private resetPositionToDefault() {
+      // 简单的默认位置计算，实际渲染时会再次调整
+      const width = 48; 
+      const height = 48;
+      const padding = 20;
+      
+      if (this._position.includes('left')) this._savedX = padding;
+      else this._savedX = window.innerWidth - width - padding;
+      
+      if (this._position.includes('top')) this._savedY = padding;
+      else this._savedY = window.innerHeight - height - padding;
+  }
 
-    // 只有在非收起状态下才保存位置，避免保存吸附后的边缘位置
-    if (!this._isCollapsed) {
-      const rect = button.getBoundingClientRect();
-      localStorage.setItem(STORAGE_KEY_POS, JSON.stringify({ x: rect.left, y: rect.top }));
-    } else {
-        // 收起状态下，如果有拖拽（只改变了Y），我们需要更新保存的Y值，但保持X值不变
-        // 这是一个优化，目前可以先简单处理：不更新坐标，或者读取之前的坐标只更新Y
-        // 为了简单且稳健，收起时暂不更新位置，或者只更新 Y？
-        // 如果用户在收起时拖动了高度，展开时应该保留这个高度。
-        // 所以我们需要读取旧的 pos
-        try {
-            const savedPos = localStorage.getItem(STORAGE_KEY_POS);
-            if (savedPos) {
-                const { x } = JSON.parse(savedPos);
-                const rect = button.getBoundingClientRect();
-                // 更新 Y，保持 X
-                localStorage.setItem(STORAGE_KEY_POS, JSON.stringify({ x: x, y: rect.top }));
-            }
-        } catch (e) {
-            // ignore
-        }
-    }
+  private saveState() {
+    // 保存状态到 localStorage
+    // 注意：_savedX 和 _savedY 应该是“展开状态下的理想位置”
+    localStorage.setItem(STORAGE_KEY_POS, JSON.stringify({ x: this._savedX, y: this._savedY }));
+    localStorage.setItem(STORAGE_KEY_COLLAPSED, String(this._isCollapsed));
   }
 
   private applyPosition() {
     const button = this._shadow.querySelector('button');
     if (!button) return;
 
-    // 获取视口尺寸
-    const maxX = window.innerWidth - button.offsetWidth;
-    const maxY = window.innerHeight - button.offsetHeight;
+    const width = this._isCollapsed ? 24 : 48;
+    const height = 48;
+    
+    const maxX = window.innerWidth - width;
+    const maxY = window.innerHeight - height;
 
-    // 优先处理收起状态的吸附逻辑
+    let targetX, targetY;
+
     if (this._isCollapsed) {
-        // 收起时：强制吸附到右侧边缘
-        // 使用 right: 0 和 left: auto
-        // top 使用当前保存的或计算的 top
-        
-        let currentY = parseFloat(this.style.getPropertyValue('--hs-trigger-top') || '20');
-        currentY = Math.max(0, Math.min(currentY, maxY));
-
-        button.style.right = '0px';
-        button.style.left = 'auto';
-        button.style.top = `${currentY}px`;
-        button.style.bottom = 'auto';
-        
-        // 更新 CSS 变量以保持一致性（虽然 left/right 已覆盖）
-        this.style.setProperty('--hs-trigger-top', `${currentY}px`);
+        // 收起状态：吸附右侧边缘
+        targetX = maxX; // window.innerWidth - 24
+        // Y轴限制
+        targetY = Math.max(0, Math.min(this._savedY, maxY));
     } else {
-        // 展开状态：使用保存的精确位置
-        if (!this.style.getPropertyValue('--hs-trigger-position-set')) {
-            // 默认位置
-            const pos = this._position;
-            button.style.top = pos.includes('top') ? '20px' : 'auto';
-            button.style.bottom = pos.includes('bottom') ? '20px' : 'auto';
-            button.style.left = pos.includes('left') ? '20px' : 'auto';
-            button.style.right = pos.includes('right') ? '20px' : 'auto';
-        } else {
-            // 自定义位置
-            let currentX = parseFloat(this.style.getPropertyValue('--hs-trigger-left') || '0');
-            let currentY = parseFloat(this.style.getPropertyValue('--hs-trigger-top') || '0');
-
-            // 限制范围
-            currentX = Math.max(0, Math.min(currentX, maxX));
-            currentY = Math.max(0, Math.min(currentY, maxY));
-
-            this.style.setProperty('--hs-trigger-left', `${currentX}px`);
-            this.style.setProperty('--hs-trigger-top', `${currentY}px`);
-            
-            button.style.left = `${currentX}px`;
-            button.style.top = `${currentY}px`;
-            button.style.right = 'auto';
-            button.style.bottom = 'auto';
+        // 展开状态：使用保存的位置，但进行边界限制
+        targetX = Math.max(0, Math.min(this._savedX, maxX));
+        targetY = Math.max(0, Math.min(this._savedY, maxY));
+        
+        // 如果位置被修正了（比如窗口变小），更新保存的值
+        if (targetX !== this._savedX || targetY !== this._savedY) {
+            this._savedX = targetX;
+            this._savedY = targetY;
         }
     }
+
+    // 应用位置
+    button.style.left = `${targetX}px`;
+    button.style.top = `${targetY}px`;
+    
+    // 同时也更新 CSS 变量
+    this.style.setProperty('--hs-trigger-left', `${targetX}px`);
+    this.style.setProperty('--hs-trigger-top', `${targetY}px`);
+
     this.updateCollapsedState();
   }
   
@@ -189,86 +180,87 @@ export class FloatingTrigger extends HTMLElement {
     if (!btn) return;
 
     btn.addEventListener('click', (e) => {
-      // 如果发生过拖拽，阻止默认行为和冒泡
       if (this._wasDragging) {
         e.preventDefault();
         e.stopPropagation();
-        this._wasDragging = false; // 重置标志位
+        this._wasDragging = false;
         return;
       }
       this.dispatchEvent(new CustomEvent('toggle', { bubbles: true, composed: true }));
     });
 
-    // 显式收起按钮点击事件
     const collapseBtn = this._shadow.querySelector('.collapse-btn');
     collapseBtn?.addEventListener('click', (e) => {
-      e.stopPropagation(); // 阻止触发 toggle
-      e.preventDefault(); // 防止触发按钮点击
+      e.stopPropagation(); 
+      e.preventDefault(); 
       this._isCollapsed = !this._isCollapsed;
-      this.applyPosition(); // 应用位置变化（吸附/还原）
+      this.applyPosition(); // 触发动画
       this.saveState();
     });
     
-    // 双击展开（仅在已收起状态下有效，方便恢复）
     btn.addEventListener('dblclick', (e) => {
       if (this._isCollapsed) {
         e.stopPropagation();
         this._isCollapsed = false;
-        this.applyPosition(); // 应用位置变化（还原）
+        this.applyPosition();
         this.saveState();
       }
     });
 
     btn.addEventListener('mousedown', (e: MouseEvent) => {
-      if (e.button !== 0) return; // 只响应鼠标左键
-      // 如果点击的是收起按钮，不启动拖拽
+      if (e.button !== 0) return;
       if ((e.target as HTMLElement).closest('.collapse-btn')) return;
 
       this._isDragging = true;
-      this._wasDragging = false; // 每次 mousedown 都重置
-      this._offsetX = e.clientX - btn.getBoundingClientRect().left;
-      this._offsetY = e.clientY - btn.getBoundingClientRect().top;
+      this._wasDragging = false;
+      
+      // 记录鼠标相对于按钮左上角的偏移
+      const rect = btn.getBoundingClientRect();
+      this._offsetX = e.clientX - rect.left;
+      this._offsetY = e.clientY - rect.top;
       
       const startX = e.clientX;
       const startY = e.clientY;
       let hasMoved = false;
+      
+      // 拖拽开始时，暂时禁用 transition 以避免延迟
+      btn.style.transition = 'none';
 
       const onMouseMove = (moveEvent: MouseEvent) => {
         if (!this._isDragging) return;
         
-        // 判断是否真的发生了位移（防止微小抖动被误判为拖拽）
         if (!hasMoved && (Math.abs(moveEvent.clientX - startX) > 2 || Math.abs(moveEvent.clientY - startY) > 2)) {
           hasMoved = true;
           this._wasDragging = true;
           btn.style.cursor = 'grabbing';
-          btn.style.transition = 'none'; // 拖拽时禁用过渡动画
         }
 
         if (hasMoved) {
             let newX = moveEvent.clientX - this._offsetX;
             let newY = moveEvent.clientY - this._offsetY;
             
+            const width = this._isCollapsed ? 24 : 48;
+            const height = 48;
+            const maxX = window.innerWidth - width;
+            const maxY = window.innerHeight - height;
+
             // 边界限制
-            const maxX = window.innerWidth - btn.offsetWidth;
-            const maxY = window.innerHeight - btn.offsetHeight;
             newX = Math.max(0, Math.min(newX, maxX));
             newY = Math.max(0, Math.min(newY, maxY));
             
             if (this._isCollapsed) {
-                // 收起状态下，只允许垂直拖动，强制吸附右侧
-                btn.style.left = 'auto';
-                btn.style.right = '0px';
+                // 收起状态下，X 轴固定在右侧，只允许 Y 轴移动
+                newX = window.innerWidth - 24;
+                // 只更新 Y
+                this._savedY = newY; 
             } else {
-                btn.style.left = `${newX}px`;
-                btn.style.right = 'auto';
-                this.style.setProperty('--hs-trigger-left', `${newX}px`);
+                // 展开状态，更新 X 和 Y
+                this._savedX = newX;
+                this._savedY = newY;
             }
-            
+
+            btn.style.left = `${newX}px`;
             btn.style.top = `${newY}px`;
-            btn.style.bottom = 'auto';
-            
-            this.style.setProperty('--hs-trigger-position-set', 'true');
-            this.style.setProperty('--hs-trigger-top', `${newY}px`);
         }
       };
 
@@ -276,11 +268,12 @@ export class FloatingTrigger extends HTMLElement {
         if (!this._isDragging) return;
         this._isDragging = false;
         btn.style.cursor = 'pointer';
-        btn.style.transition = ''; // 恢复过渡动画
+        
+        // 恢复 transition
+        btn.style.transition = ''; 
         
         if (hasMoved) {
             this.saveState();
-            // 拦截紧接着的 click 事件
             const preventClick = (e: Event) => {
                 e.stopPropagation();
                 e.preventDefault();
@@ -298,17 +291,13 @@ export class FloatingTrigger extends HTMLElement {
   }
 
   render() {
-    // 计算位置样式 - 必须明确设置所有四个方向，避免默认值干扰
-    // 拖拽后使用 --hs-trigger-left/top 变量
+    // 初始位置使用默认值，稍后 connectedCallback 中会覆盖
     const posStyles = `
-      top: var(--hs-trigger-top, ${this._position.includes('top') ? '20px' : 'auto'});
-      bottom: var(--hs-trigger-bottom, ${this._position.includes('bottom') ? '20px' : 'auto'});
-      left: var(--hs-trigger-left, ${this._position.includes('left') ? '20px' : 'auto'});
-      right: var(--hs-trigger-right, ${this._position.includes('right') ? '20px' : 'auto'});
-      transform: translateX(0);
+      left: 0;
+      top: 0;
+      transform: translateZ(0); /* 开启硬件加速 */
     `;
     
-    // 自定义颜色
     const bgStyle = this._bgColor ? `background: ${this._bgColor};` : '';
     const colorStyle = this._textColor ? `color: ${this._textColor};` : '';
     
@@ -320,21 +309,27 @@ export class FloatingTrigger extends HTMLElement {
           ${posStyles}
           width: 48px;
           height: 48px;
-          border-radius: 12px; /* 更现代的圆角 */
+          border-radius: 12px;
           background: var(--hs-primary);
           color: white;
           ${bgStyle}
           ${colorStyle}
           border: none;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15); /* 更柔和的阴影 */
+          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
           cursor: pointer;
           display: flex;
           align-items: center;
           justify-content: center;
           font-family: var(--hs-font-family);
           z-index: var(--hs-z-index);
-          transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s, box-shadow 0.2s;
-          overflow: visible; /* 允许子元素（收起按钮）溢出或显示 */
+          /* 添加平滑过渡动画 */
+          transition: width 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                      left 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                      top 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), 
+                      border-radius 0.3s,
+                      background 0.2s, 
+                      box-shadow 0.2s;
+          overflow: visible;
         }
         .icon {
           transition: transform 0.2s;
@@ -363,13 +358,14 @@ export class FloatingTrigger extends HTMLElement {
           display: flex;
           align-items: center;
           justify-content: center;
-          opacity: 1; /* 默认可见 */
+          opacity: 1; 
           transition: opacity 0.2s, background 0.2s;
           color: white;
           font-weight: bold;
+          z-index: 2;
         }
         .collapse-btn::before {
-          content: '—'; /* 最小化图标 */
+          content: '—'; 
           font-size: 12px;
           color: currentColor;
         }
@@ -385,27 +381,24 @@ export class FloatingTrigger extends HTMLElement {
           width: 24px;
           height: 48px;
           border-radius: 12px 0 0 12px;
-          transform: none; /* 完全展示，不再隐藏 */
-          opacity: 1;
-          right: 0 !important; /* 强制右对齐 */
-          left: auto !important;
+          /* 不再强制 left/right，由 JS 控制 left 实现动画 */
         }
         button.collapsed:hover {
-          width: 28px; /* hover 时稍微变宽 */
-          opacity: 1;
+          width: 28px; 
         }
+        
         button.collapsed .icon {
           display: none;
         }
         button.collapsed .collapse-btn {
-          position: static; /* 充满父容器 */
+          position: static;
           width: 100%;
           height: 100%;
           border-radius: 0;
           background: transparent;
         }
         button.collapsed .collapse-btn::before {
-          content: '‹'; /* 展开图标 (左箭头) */
+          content: '‹'; 
           font-size: 20px;
           line-height: 48px;
         }
@@ -415,9 +408,6 @@ export class FloatingTrigger extends HTMLElement {
         <span class="icon">${ICONS.chart}</span>
       </button>
     `;
-    this.applyPosition(); 
-    this.updateCollapsedState();
-    this.updateStyles();
   }
 }
 
