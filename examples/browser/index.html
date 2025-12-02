@@ -319,9 +319,13 @@
     scheduler.createTask({
       id: 'main-heartbeat',
       schedule: '3s',
-      options: { driver: 'main' }, 
+      options: { 
+        driver: 'main',
+        namespace: 'ui',
+        runImmediately: true 
+      }, 
       handler: () => {
-        log('❤️ [Main] 主线程心跳检测正常', 'error'); // 使用 error 样式红色，对应 UI 的红色点
+        log('❤️ [Main][UI] 主线程心跳检测正常', 'error'); // 使用 error 样式红色，对应 UI 的红色点
       }
     });
 
@@ -329,8 +333,11 @@
     scheduler.createTask({
       id: 'worker-heartbeat',
       schedule: '5s',
+      options: {
+        namespace: 'background'
+      },
       handler: () => {
-        log('💙 [Worker] 后台线程任务执行中', 'info'); // 使用 info 样式蓝色，对应 UI 的蓝色点
+        log('💙 [Worker][BG] 后台线程任务执行中', 'info'); // 使用 info 样式蓝色，对应 UI 的蓝色点
       }
     });
 

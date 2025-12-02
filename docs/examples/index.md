@@ -123,7 +123,11 @@ const { Scheduler } = require('hyper-scheduler');
     scheduler.createTask({
       id: 'main-heartbeat',
       schedule: '3s',
-      options: { driver: 'main' },
+      options: { 
+        driver: 'main',
+        namespace: 'ui',
+        runImmediately: true
+      },
       handler: () => log('❤️ [Main] 主线程心跳检测正常', 'error')
     });
 
@@ -131,6 +135,9 @@ const { Scheduler } = require('hyper-scheduler');
     scheduler.createTask({
       id: 'worker-heartbeat',
       schedule: '5s',
+      options: {
+        namespace: 'background'
+      },
       handler: () => log('💙 [Worker] 后台线程任务执行中', 'info')
     });
 
@@ -166,7 +173,11 @@ console.log('✨ 系统就绪，等待启动指令...');
 scheduler.createTask({
   id: 'main-heartbeat',
   schedule: '3s',
-  options: { driver: 'main' },
+  options: { 
+    driver: 'main',
+    namespace: 'ui',
+    runImmediately: true
+  },
   handler: () => {
     console.log(`[${time()}] ❤️ [Main] 主线程心跳检测正常`);
   }
@@ -176,6 +187,9 @@ scheduler.createTask({
 scheduler.createTask({
   id: 'worker-heartbeat',
   schedule: '5s',
+  options: {
+    namespace: 'background'
+  },
   handler: () => {
     console.log(`[${time()}] 💙 [Worker] 后台线程任务执行中`);
   }
@@ -205,16 +219,25 @@ function App() {
     });
 
     // 2. 注册任务
+    // 主线程心跳 (明确指定 driver: 'main')
     schedulerRef.current.createTask({
       id: 'main-heartbeat',
       schedule: '3s',
-      options: { driver: 'main' }, 
+      options: { 
+        driver: 'main',
+        namespace: 'ui',
+        runImmediately: true
+      }, 
       handler: () => addLog('❤️ [Main] 主线程心跳检测正常', 'error')
     });
 
+    // Worker 线程心跳 (默认即为 Worker 驱动)
     schedulerRef.current.createTask({
       id: 'worker-heartbeat',
       schedule: '5s',
+      options: {
+        namespace: 'background'
+      },
       handler: () => addLog('💙 [Worker] 后台线程任务执行中', 'info')
     });
 
@@ -266,17 +289,25 @@ onMounted(() => {
     plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
   })
   
-  // 2. 注册任务
+  // 主线程心跳 (明确指定 driver: 'main')
   scheduler.value.createTask({
     id: 'main-heartbeat',
     schedule: '3s',
-    options: { driver: 'main' },
+    options: { 
+      driver: 'main', 
+      namespace: 'ui',
+      runImmediately: true
+    },
     handler: () => addLog('❤️ [Main] 主线程心跳检测正常', 'error')
   })
 
+  // Worker 线程心跳 (默认即为 Worker 驱动)
   scheduler.value.createTask({
     id: 'worker-heartbeat',
     schedule: '5s',
+    options: {
+      namespace: 'background'
+    },
     handler: () => addLog('💙 [Worker] 后台线程任务执行中', 'info')
   })
 })

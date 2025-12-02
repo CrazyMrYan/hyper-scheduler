@@ -53,15 +53,22 @@ onMounted(() => {
   scheduler.value.createTask({
     id: 'main-heartbeat',
     schedule: '3s',
-    options: { driver: 'main' },
-    handler: () => addLog('❤️ [Main] 主线程心跳检测正常', 'error')
+    options: { 
+      driver: 'main',
+      namespace: 'ui',
+      runImmediately: true 
+    },
+    handler: () => addLog('❤️ [Main][UI] 主线程心跳检测正常', 'error')
   })
 
   // Worker 线程心跳 (默认即为 Worker 驱动)
   scheduler.value.createTask({
     id: 'worker-heartbeat',
     schedule: '5s',
-    handler: () => addLog('💙 [Worker] 后台线程任务执行中', 'info')
+    options: {
+      namespace: 'background'
+    },
+    handler: () => addLog('💙 [Worker][BG] 后台线程任务执行中', 'info')
   })
 
   addLog('✨ 系统就绪，等待启动指令...', 'info')

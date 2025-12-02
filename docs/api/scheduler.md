@@ -112,13 +112,21 @@ scheduler.createTask({
 启动调度器，开始执行所有已注册的任务。
 
 ```typescript
-start(): void
+start(scope?: string): void
 ```
+
+#### 参数
+
+- **scope** `string` - 可选。指定要启动的任务的命名空间。如果省略，则启动所有任务。
 
 #### 示例
 
 ```typescript
+// 启动所有任务
 scheduler.start();
+
+// 仅启动 'system' 命名空间下的任务
+scheduler.start('system');
 ```
 
 ### stop()
@@ -126,13 +134,21 @@ scheduler.start();
 停止调度器，暂停所有任务的调度。已经在执行的任务会继续完成。
 
 ```typescript
-stop(): void
+stop(scope?: string): void
 ```
+
+#### 参数
+
+- **scope** `string` - 可选。指定要停止的任务的命名空间。如果省略，则停止所有任务。
 
 #### 示例
 
 ```typescript
+// 停止所有任务
 scheduler.stop();
+
+// 仅停止 'system' 命名空间下的任务
+scheduler.stop('system');
 ```
 
 ### startTask()
@@ -250,8 +266,12 @@ if (task) {
 获取所有已注册任务的列表。
 
 ```typescript
-getAllTasks(): Task[]
+getAllTasks(namespace?: string): Task[]
 ```
+
+#### 参数
+
+- **namespace** `string` - 可选。指定要获取的任务的命名空间。如果省略，则返回所有任务。
 
 #### 返回值
 
@@ -260,12 +280,12 @@ getAllTasks(): Task[]
 #### 示例
 
 ```typescript
-const tasks = scheduler.getAllTasks();
-console.log(`Total tasks: ${tasks.length}`);
+// 获取所有任务
+const allTasks = scheduler.getAllTasks();
 
-tasks.forEach(task => {
-  console.log(`${task.id}: ${task.status}`);
-});
+// 获取 'system' 命名空间下的任务
+const systemTasks = scheduler.getAllTasks('system');
+console.log(`System tasks: ${systemTasks.length}`);
 ```
 
 ### on()
