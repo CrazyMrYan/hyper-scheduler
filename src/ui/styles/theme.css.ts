@@ -24,6 +24,7 @@ export const themeStyles = `
     --hs-radius: 6px;
     --hs-header-height: 40px;
     --hs-z-index: 9999;
+    --hs-z-index-overlay: 9998;
 
     /* Default display styles for the host itself */
     background: var(--hs-bg);
