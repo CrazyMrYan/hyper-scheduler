@@ -79,10 +79,31 @@ export class FloatingTrigger extends HTMLElement {
   private saveState() {
     const button = this._shadow.querySelector('button')!;
     if (!button) return;
-    const rect = button.getBoundingClientRect();
-    // 只保存相对窗口左上角的位置
-    localStorage.setItem(STORAGE_KEY_POS, JSON.stringify({ x: rect.left, y: rect.top }));
+    
     localStorage.setItem(STORAGE_KEY_COLLAPSED, String(this._isCollapsed));
+
+    // 只有在非收起状态下才保存位置，避免保存吸附后的边缘位置
+    if (!this._isCollapsed) {
+      const rect = button.getBoundingClientRect();
+      localStorage.setItem(STORAGE_KEY_POS, JSON.stringify({ x: rect.left, y: rect.top }));
+    } else {
+        // 收起状态下，如果有拖拽（只改变了Y），我们需要更新保存的Y值，但保持X值不变
+        // 这是一个优化，目前可以先简单处理：不更新坐标，或者读取之前的坐标只更新Y
+        // 为了简单且稳健，收起时暂不更新位置，或者只更新 Y？
+        // 如果用户在收起时拖动了高度，展开时应该保留这个高度。
+        // 所以我们需要读取旧的 pos
+        try {
+            const savedPos = localStorage.getItem(STORAGE_KEY_POS);
+            if (savedPos) {
+                const { x } = JSON.parse(savedPos);
+                const rect = button.getBoundingClientRect();
+                // 更新 Y，保持 X
+                localStorage.setItem(STORAGE_KEY_POS, JSON.stringify({ x: x, y: rect.top }));
+            }
+        } catch (e) {
+            // ignore
+        }
+    }
   }
 
   private applyPosition() {
@@ -93,31 +114,48 @@ export class FloatingTrigger extends HTMLElement {
     const maxX = window.innerWidth - button.offsetWidth;
     const maxY = window.innerHeight - button.offsetHeight;
 
-    if (!this.style.getPropertyValue('--hs-trigger-position-set')) {
-      // 只有在没有保存位置时才应用默认位置属性
-      const pos = this._position;
-      button.style.top = pos.includes('top') ? '20px' : 'auto';
-      button.style.bottom = pos.includes('bottom') ? '20px' : 'auto';
-      button.style.left = pos.includes('left') ? '20px' : 'auto';
-      button.style.right = pos.includes('right') ? '20px' : 'auto';
+    // 优先处理收起状态的吸附逻辑
+    if (this._isCollapsed) {
+        // 收起时：强制吸附到右侧边缘
+        // 使用 right: 0 和 left: auto
+        // top 使用当前保存的或计算的 top
+        
+        let currentY = parseFloat(this.style.getPropertyValue('--hs-trigger-top') || '20');
+        currentY = Math.max(0, Math.min(currentY, maxY));
+
+        button.style.right = '0px';
+        button.style.left = 'auto';
+        button.style.top = `${currentY}px`;
+        button.style.bottom = 'auto';
+        
+        // 更新 CSS 变量以保持一致性（虽然 left/right 已覆盖）
+        this.style.setProperty('--hs-trigger-top', `${currentY}px`);
     } else {
-      // 如果有保存的位置，执行边界检查 (Clamp)
-      // 获取当前的 CSS 变量值
-      let currentX = parseFloat(this.style.getPropertyValue('--hs-trigger-left') || '0');
-      let currentY = parseFloat(this.style.getPropertyValue('--hs-trigger-top') || '0');
+        // 展开状态：使用保存的精确位置
+        if (!this.style.getPropertyValue('--hs-trigger-position-set')) {
+            // 默认位置
+            const pos = this._position;
+            button.style.top = pos.includes('top') ? '20px' : 'auto';
+            button.style.bottom = pos.includes('bottom') ? '20px' : 'auto';
+            button.style.left = pos.includes('left') ? '20px' : 'auto';
+            button.style.right = pos.includes('right') ? '20px' : 'auto';
+        } else {
+            // 自定义位置
+            let currentX = parseFloat(this.style.getPropertyValue('--hs-trigger-left') || '0');
+            let currentY = parseFloat(this.style.getPropertyValue('--hs-trigger-top') || '0');
 
-      // 限制范围
-      currentX = Math.max(0, Math.min(currentX, maxX));
-      currentY = Math.max(0, Math.min(currentY, maxY));
+            // 限制范围
+            currentX = Math.max(0, Math.min(currentX, maxX));
+            currentY = Math.max(0, Math.min(currentY, maxY));
 
-      // 更新 CSS 变量和 button style
-      this.style.setProperty('--hs-trigger-left', `${currentX}px`);
-      this.style.setProperty('--hs-trigger-top', `${currentY}px`);
-      
-      button.style.left = `${currentX}px`;
-      button.style.top = `${currentY}px`;
-      button.style.right = 'auto';
-      button.style.bottom = 'auto';
+            this.style.setProperty('--hs-trigger-left', `${currentX}px`);
+            this.style.setProperty('--hs-trigger-top', `${currentY}px`);
+            
+            button.style.left = `${currentX}px`;
+            button.style.top = `${currentY}px`;
+            button.style.right = 'auto';
+            button.style.bottom = 'auto';
+        }
     }
     this.updateCollapsedState();
   }
@@ -167,7 +205,7 @@ export class FloatingTrigger extends HTMLElement {
       e.stopPropagation(); // 阻止触发 toggle
       e.preventDefault(); // 防止触发按钮点击
       this._isCollapsed = !this._isCollapsed;
-      this.updateCollapsedState();
+      this.applyPosition(); // 应用位置变化（吸附/还原）
       this.saveState();
     });
     
@@ -176,7 +214,7 @@ export class FloatingTrigger extends HTMLElement {
       if (this._isCollapsed) {
         e.stopPropagation();
         this._isCollapsed = false;
-        this.updateCollapsedState();
+        this.applyPosition(); // 应用位置变化（还原）
         this.saveState();
       }
     });
@@ -216,13 +254,20 @@ export class FloatingTrigger extends HTMLElement {
             newX = Math.max(0, Math.min(newX, maxX));
             newY = Math.max(0, Math.min(newY, maxY));
             
-            btn.style.left = `${newX}px`;
+            if (this._isCollapsed) {
+                // 收起状态下，只允许垂直拖动，强制吸附右侧
+                btn.style.left = 'auto';
+                btn.style.right = '0px';
+            } else {
+                btn.style.left = `${newX}px`;
+                btn.style.right = 'auto';
+                this.style.setProperty('--hs-trigger-left', `${newX}px`);
+            }
+            
             btn.style.top = `${newY}px`;
-            btn.style.right = 'auto';
             btn.style.bottom = 'auto';
             
             this.style.setProperty('--hs-trigger-position-set', 'true');
-            this.style.setProperty('--hs-trigger-left', `${newX}px`);
             this.style.setProperty('--hs-trigger-top', `${newY}px`);
         }
       };
