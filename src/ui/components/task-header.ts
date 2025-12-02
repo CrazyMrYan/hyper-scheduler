@@ -37,7 +37,7 @@ export class TaskHeader extends HTMLElement {
     this._fps = Math.round(val);
     if (this.$fps) {
       const color = this._fps < 30 ? 'var(--hs-danger)' : (this._fps < 50 ? 'var(--hs-warning)' : 'var(--hs-success)');
-      this.$fps.innerHTML = `⚡ ${t('stats.fps')}: <span style="color:${color}">${this._fps}</span> (${t('stats.mainThread')})`;
+      this.$fps.innerHTML = `⚡ ${t('stats.fps')}: <span style="color:${color}; font-family:var(--hs-font-monospaced-num);">${this._fps}</span> (${t('stats.mainThread')})`;
     }
   }
 

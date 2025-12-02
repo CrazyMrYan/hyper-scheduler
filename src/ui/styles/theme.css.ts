@@ -7,6 +7,9 @@ export const themeStyles = `
     --hs-panel-width: 400px;
     --hs-panel-height: 300px;
     
+    /* 等宽数字字体 */
+    --hs-font-monospaced-num: var(--hs-font-mono);
+
     /* Light Theme (Default) */
     --hs-bg: #ffffff;
     --hs-bg-secondary: #f3f4f6;
