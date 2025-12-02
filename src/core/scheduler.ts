@@ -107,25 +107,20 @@ export class Scheduler {
     const globalDriver = this.config.driver;
     const driver = taskDriver || globalDriver;
     
-    console.log(`[getTimerStrategy] Task: ${task.id}, taskDriver: ${taskDriver}, globalDriver: ${globalDriver}, resolvedDriver: ${driver}`);
-
     // 如果没有指定 driver 或没有工厂函数，使用默认策略
     if (!driver || !this.timerStrategyFactory) {
-      console.log(`[getTimerStrategy] Using defaultTimerStrategy for task ${task.id}`);
       return this.defaultTimerStrategy;
     }
     
     // 检查是否已经为该任务创建了策略
     const cacheKey = `${task.id}_${driver}`;
     if (this.taskTimerStrategies.has(cacheKey)) {
-      console.log(`[getTimerStrategy] Using cached strategy for task ${task.id}, driver ${driver}`);
       return this.taskTimerStrategies.get(cacheKey)!;
     }
     
     // 创建新的策略并缓存
     const strategy = this.timerStrategyFactory(driver);
     this.taskTimerStrategies.set(cacheKey, strategy);
-    console.log(`[getTimerStrategy] Creating and caching new strategy for task ${task.id}, driver ${driver}`);
     return strategy;
   }
 

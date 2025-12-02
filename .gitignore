@@ -43,9 +43,9 @@ lib/
 
 */.vitepress/cache/
 
-# .windsurf/
-# .gemini/
-# .specify/
+.windsurf/
+.gemini/
+.specify/
 .windsurf/
 origin-prd/
-# specs/
+specs/

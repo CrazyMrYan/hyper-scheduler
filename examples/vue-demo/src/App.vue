@@ -55,7 +55,6 @@ onMounted(() => {
     schedule: '3s',
     options: { 
       driver: 'main',
-      namespace: 'ui',
       runImmediately: true 
     },
     handler: () => addLog('❤️ [Main][UI] 主线程心跳检测正常', 'error')
@@ -203,6 +202,7 @@ body {
   max-width: 1000px;
   height: 600px;
   background: var(--bg-color);
+  margin: 0 auto; /* Center horizontally */
 }
 
 /* 左侧控制面板 */

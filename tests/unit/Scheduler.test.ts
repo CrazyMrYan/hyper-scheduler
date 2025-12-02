@@ -53,7 +53,7 @@ describe('Scheduler Namespace Management', () => {
     nodeTimerInstance = new NodeTimer();
     nodeTimerScheduleSpy = vi.spyOn(nodeTimerInstance, 'schedule');
 
-    scheduler = new Scheduler(nodeTimerInstance, { debug: true });
+    scheduler = new Scheduler(nodeTimerInstance, { debug: false });
     handlerASpy = vi.fn();
     handlerBSpy = vi.fn();
     handlerCSpy = vi.fn();

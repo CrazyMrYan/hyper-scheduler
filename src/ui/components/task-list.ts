@@ -194,21 +194,21 @@ export class TaskList extends HTMLElement {
 
     const groups = this.groupTasksByNamespace(this._tasks);
     
-    // Flat view if only default namespace exists
-    if (groups.size === 1 && groups.has('default')) {
-      tbody.innerHTML = this._tasks.map((task, index) => this.renderTaskRow(task, index)).join('');
-      return;
-    }
-
-    // Hierarchical view
     let html = '';
-    const sortedNamespaces = Array.from(groups.keys()).sort((a, b) => {
-        if (a === 'default') return -1;
-        if (b === 'default') return 1;
-        return a.localeCompare(b);
-    });
-
     let globalIndex = 0;
+
+    // 1. 渲染 default 命名空间的任务 (扁平化)
+    const defaultTasks = groups.get('default');
+    if (defaultTasks && defaultTasks.length > 0) {
+        // Render tasks directly without a folder
+        html += defaultTasks.map((task) => this.renderTaskRow(task, ++globalIndex, false)).join('');
+    }
+    // 从 groups 中删除 default，以便后续只处理其他命名空间
+    groups.delete('default');
+
+    // 2. 渲染其他命名空间 (分层结构)
+    const sortedNamespaces = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+
     sortedNamespaces.forEach(ns => {
         const tasks = groups.get(ns)!;
         const isExpanded = this._expandedNamespaces.has(ns);
@@ -216,7 +216,7 @@ export class TaskList extends HTMLElement {
         
         // Namespace Row
         html += `
-            <tr class="namespace-row" data-ns="${ns}">
+            <tr class="namespace-row ${isExpanded ? 'ns-expanded' : ''}" data-ns="${ns}">
                 <td colspan="8">
                     <span class="ns-toggle">${icon}</span>
                     <span class="ns-icon">📂</span>

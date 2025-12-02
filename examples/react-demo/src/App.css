@@ -42,6 +42,7 @@ body {
   max-width: 1000px;
   height: 600px;
   background: var(--bg-color);
+  margin: 0 auto; /* Center horizontally */
 }
 
 /* 左侧控制面板 */

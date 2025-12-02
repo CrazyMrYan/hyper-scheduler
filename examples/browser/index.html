@@ -334,7 +334,6 @@
       id: 'worker-heartbeat',
       schedule: '5s',
       options: {
-        namespace: 'background'
       },
       handler: () => {
         log('💙 [Worker][BG] 后台线程任务执行中', 'info'); // 使用 info 样式蓝色，对应 UI 的蓝色点
