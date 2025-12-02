@@ -41,7 +41,8 @@ export class TaskList extends HTMLElement {
       const lower = text.toLowerCase();
       this._tasks = all.filter(t => 
         t.id.toLowerCase().includes(lower) || 
-        t.tags.some(tag => tag.toLowerCase().includes(lower))
+        t.tags.some(tag => tag.toLowerCase().includes(lower)) ||
+        (t.namespace && t.namespace.toLowerCase().includes(lower))
       );
     }
     this.renderRows();
@@ -143,7 +144,12 @@ export class TaskList extends HTMLElement {
       <tr data-id="${task.id}" class="${rowClass}">
         <td class="col-num">${index + 1}</td>
         <td class="col-id">
-          <div class="task-id">${task.id}</div>
+          <div class="task-id">
+            ${task.id}
+            ${task.namespace && task.namespace !== 'default' 
+              ? `<span class="namespace-badge" title="Namespace">${task.namespace}</span>` 
+              : ''}
+          </div>
           <div class="tags">
             ${task.tags && task.tags.length > 0 
               ? task.tags.map(t => `<span class="tag">${t}</span>`).join('') 
@@ -249,6 +255,18 @@ export class TaskList extends HTMLElement {
         }
         .task-id {
           font-weight: 600;
+        }
+        .namespace-badge {
+          display: inline-block;
+          background: var(--hs-bg-secondary);
+          color: var(--hs-text-secondary);
+          border: 1px solid var(--hs-border);
+          border-radius: 4px;
+          padding: 0 4px;
+          font-size: 9px;
+          margin-left: 6px;
+          font-family: monospace;
+          vertical-align: middle;
         }
         .tags {
           display: flex;

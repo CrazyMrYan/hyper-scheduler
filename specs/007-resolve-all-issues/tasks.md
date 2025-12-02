@@ -29,13 +29,21 @@
 
 **目标**: 提升 DevTools 的可用性和视觉体验。
 
-### 用户故事: DevTools 增强 (Issue #8, #11, #12, #13)
-- [ ] T011 [P] [US3] 更新 `src/plugins/dev-tools.ts`，将命名空间信息传递给 UI 组件。
-- [ ] T012 [P] [US3] 修改 `src/ui/components/devtools.ts`，实现全屏遮罩层逻辑 (Issue #11)。
-- [ ] T013 [P] [US3] 修改 `src/ui/components/floating-trigger.ts`，实现拖拽和收起功能 (Issue #13)。
-- [ ] T014 [P] [US3] 修改 `src/ui/styles/theme.css.ts` (或相应样式文件)，为帧率计数器添加等宽字体样式 (Issue #13)。
-- [ ] T015 [US3] 更新 `DevToolsOptions` 接口，添加 `zoomStep` 配置 (Issue #12)。
-- [ ] T016 [US3] 修改 `src/ui/components/timeline.ts`，支持 `zoomStep` 配置并优化缩放逻辑。
+### 用户故事: DevTools 增强 (Issue #8, #11, #12, #13)                                                    
+
+- [x] T011 [P] [US3] 更新 `src/plugins/dev-tools.ts`，将命名空间信息传递给 UI 组件。                     
+
+- [x] T012 [P] [US3] 修改 `src/ui/components/devtools.ts`，实现全屏遮罩层逻辑 (Issue #11)。              
+
+- [x] T013 [P] [US3] 修改 `src/ui/components/floating-trigger.ts`，实现拖拽和收起功能 (Issue #13)。      
+
+- [x] T014 [P] [US3] 修改 `src/ui/styles/theme.css.ts` (或相应样式文件)，为帧率计数器添加等宽字体样式 (Is
+
+sue #13)。                                                                                               
+
+- [x] T015 [US3] 更新 `DevToolsOptions` 接口，添加 `zoomStep` 配置 (Issue #12)。                         
+
+- [x] T016 [US3] 修改 `src/ui/components/timeline.ts`，支持 `zoomStep` 配置并优化缩放逻辑。
 - [ ] T017 [US3] 在 DevTools UI 中增加按命名空间筛选/查看任务的功能。
 
 ## 阶段 4: 文档修复与收尾
