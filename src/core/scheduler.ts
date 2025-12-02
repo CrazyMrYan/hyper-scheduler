@@ -107,20 +107,25 @@ export class Scheduler {
     const globalDriver = this.config.driver;
     const driver = taskDriver || globalDriver;
     
+    console.log(`[getTimerStrategy] Task: ${task.id}, taskDriver: ${taskDriver}, globalDriver: ${globalDriver}, resolvedDriver: ${driver}`);
+
     // 如果没有指定 driver 或没有工厂函数，使用默认策略
     if (!driver || !this.timerStrategyFactory) {
+      console.log(`[getTimerStrategy] Using defaultTimerStrategy for task ${task.id}`);
       return this.defaultTimerStrategy;
     }
     
     // 检查是否已经为该任务创建了策略
     const cacheKey = `${task.id}_${driver}`;
     if (this.taskTimerStrategies.has(cacheKey)) {
+      console.log(`[getTimerStrategy] Using cached strategy for task ${task.id}, driver ${driver}`);
       return this.taskTimerStrategies.get(cacheKey)!;
     }
     
     // 创建新的策略并缓存
     const strategy = this.timerStrategyFactory(driver);
     this.taskTimerStrategies.set(cacheKey, strategy);
+    console.log(`[getTimerStrategy] Creating and caching new strategy for task ${task.id}, driver ${driver}`);
     return strategy;
   }
 
@@ -156,6 +161,11 @@ export class Scheduler {
     // 如果调度器已经在运行，自动启动新任务
     if (this.running) {
       task.status = TaskStatus.IDLE;
+      
+      if (task.options?.runImmediately) {
+        this.triggerTask(task.id);
+      }
+      
       this.scheduleTask(task);
     }
   }
@@ -346,9 +356,14 @@ export class Scheduler {
   }
   
   /**
-   * 获取所有任务。
+   * 获取所有任务，可按命名空间筛选。
+   * @param namespace 可选的命名空间名称
+   * @returns 任务数组
    */
-  getAllTasks(): Task[] {
+  getAllTasks(namespace?: string): Task[] {
+    if (namespace) {
+      return this.registry.getTasksByNamespace(namespace);
+    }
     return this.registry.getAllTasks();
   }
 
@@ -435,22 +450,36 @@ export class Scheduler {
    * 启动调度器。
    * 开始处理所有任务（除了手动停止的任务）。
    */
-  start(): void {
-    if (this.running) return;
-    this.running = true;
-    this.log('Scheduler started');
-    this.emit(SchedulerEvents.SCHEDULER_STARTED, { running: true });
-    this.registry.getAllTasks().forEach((task) => {
+  start(scope?: string): void {
+    if (!scope && this.running) return; // 如果没有 scope 且调度器已经在运行，则直接返回
+
+    this.log(scope ? `Scheduler starting for scope: ${scope}` : 'Scheduler started');
+    this.emit(SchedulerEvents.SCHEDULER_STARTED, { running: true, scope });
+    
+    const tasksToStart = scope 
+      ? this.registry.getTasksByNamespace(scope) 
+      : this.registry.getAllTasks();
+
+    tasksToStart.forEach((task) => {
       // 启动所有 stopped 状态的任务（新创建的任务默认是 stopped）
       if (task.status === TaskStatus.STOPPED) {
         task.status = TaskStatus.IDLE;
         this.emit(SchedulerEvents.TASK_UPDATED, { taskId: task.id, task });
       }
+      
       // 调度所有非 running 状态的任务
       if (task.status !== TaskStatus.RUNNING) {
+        // 如果设置了 runImmediately，立即触发一次
+        if (task.options?.runImmediately) {
+          this.triggerTask(task.id);
+        }
         this.scheduleTask(task);
       }
     });
+
+    if (!scope) { // 如果是全局启动，才设置运行状态
+      this.running = true;
+    }
     this.notify();
   }
 
@@ -458,36 +487,35 @@ export class Scheduler {
    * 停止调度器。
    * 取消所有正在等待的定时器。
    */
-  stop(): void {
-    this.running = false;
-    this.log('Scheduler stopped');
-    this.emit(SchedulerEvents.SCHEDULER_STOPPED, { running: false });
+  stop(scope?: string): void {
+    if (!scope && !this.running) return; // 如果没有 scope 且调度器未运行，则直接返回
+
+    this.log(scope ? `Scheduler stopping for scope: ${scope}` : 'Scheduler stopped');
+    this.emit(SchedulerEvents.SCHEDULER_STOPPED, { running: false, scope });
     
-    // Cancel all timers using appropriate strategy for each task
-    this.timers.forEach((handle, taskId) => {
-      const task = this.registry.getTask(taskId);
-      if (task) {
+    const tasksToStop = scope 
+      ? this.registry.getTasksByNamespace(scope) 
+      : this.registry.getAllTasks();
+
+    tasksToStop.forEach((task) => {
+      const handle = this.timers.get(task.id);
+      if (handle) {
         this.getTimerStrategy(task).cancel(handle);
-      } else {
-        this.defaultTimerStrategy.cancel(handle);
+        this.timers.delete(task.id);
       }
-    });
-    this.timers.clear();
-    
-    // 将所有非 stopped 状态的任务标记为 stopped
-    this.registry.getAllTasks().forEach((task) => {
       if (task.status !== TaskStatus.STOPPED) {
         task.status = TaskStatus.STOPPED;
         this.emit(SchedulerEvents.TASK_UPDATED, { taskId: task.id, task });
       }
     });
-    
+
+    if (!scope) { // 如果是全局停止，才设置运行状态
+      this.running = false;
+    }
     this.notify(); // 通知 DevTools 更新状态
   }
 
   private scheduleTask(task: Task): void {
-    if (!this.running && task.status !== TaskStatus.RUNNING) return;
-
     try {
       // 使用新的 getNextScheduleRun
       const nextRun = getNextScheduleRun(task.schedule, {
@@ -516,7 +544,7 @@ export class Scheduler {
   private async executeTask(task: Task, attempt: number = 0, force: boolean = false): Promise<void> {
     this.timers.delete(task.id);
 
-    if (!force && (!this.running || task.status === TaskStatus.STOPPED)) return;
+    if (!force && task.status === TaskStatus.STOPPED) return;
 
     task.status = TaskStatus.RUNNING;
     task.lastRun = Date.now();

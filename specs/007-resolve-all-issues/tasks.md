@@ -14,16 +14,16 @@
 **目标**: 实现命名空间支持和立即触发功能。
 
 ### 用户故事: 命名空间管理 (Issue #8)
-- [ ] T003 [US1] 更新 `src/types.ts` 中的 `TaskOptions` 接口，添加 `namespace` 字段。
-- [ ] T004 [US1] 修改 `src/core/task-registry.ts`，实现 `namespaceIndex` (Map<Namespace, Set<TaskId>>) 并更新增删逻辑。
-- [ ] T005 [US1] 修改 `src/core/scheduler.ts` 的 `start` 和 `stop` 方法，支持可选的 `scope` 参数。
-- [ ] T006 [US1] 更新 `src/core/scheduler.ts` 的 `getTasks` 方法，支持按命名空间筛选。
-- [ ] T007 [US1] 为命名空间功能编写单元测试 (`tests/unit/Scheduler.test.ts`)。
+- [x] T003 [US1] 更新 `src/types.ts` 中的 `TaskOptions` 接口，添加 `namespace` 字段。
+- [x] T004 [US1] 修改 `src/core/task-registry.ts`，实现 `namespaceIndex` (Map<Namespace, Set<TaskId>>) 并更新增删逻辑。
+- [x] T005 [US1] 修改 `src/core/scheduler.ts` 的 `start` 和 `stop` 方法，支持可选的 `scope` 参数。
+- [x] T006 [US1] 更新 `src/core/scheduler.ts` 的 `getTasks` 方法，支持按命名空间筛选。
+- [x] T007 [US1] 为命名空间功能编写单元测试 (`tests/unit/Scheduler.test.ts`)。
 
 ### 用户故事: 立即触发任务 (Issue #10)
-- [ ] T008 [US2] 更新 `src/types.ts` 中的 `TaskOptions` 接口，添加 `runImmediately` 字段。
-- [ ] T009 [US2] 修改 `src/core/scheduler.ts`，在 `start()` 或 `createTask()` 中检查 `runImmediately` 并触发一次执行。
-- [ ] T010 [US2] 为立即触发功能编写单元测试。
+- [x] T008 [US2] 更新 `src/types.ts` 中的 `TaskOptions` 接口，添加 `runImmediately` 字段。
+- [x] T009 [US2] 修改 `src/core/scheduler.ts`，在 `start()` 或 `createTask()` 中检查 `runImmediately` 并触发一次执行。
+- [x] T010 [US2] 为立即触发功能编写单元测试。
 
 ## 阶段 3: UI/UX 改进
 
