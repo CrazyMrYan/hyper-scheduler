@@ -50,8 +50,8 @@ sue #13)。
 **目标**: 修复部署问题并更新文档。
 
 ### 用户故事: 文档修复 (Issue #14)
-- [ ] T018 [US4] 检查并修复 `docs/.vitepress/config.ts` 或部署脚本，确保 Playground 链接正确指向部署路径。
-- [ ] T019 [US4] 更新 `README.md` 和 API 文档，说明新的 `namespace`、`runImmediately` 和 DevTools 配置。
+- [x] T018 [US4] 检查并修复 `docs/.vitepress/config.ts` 或部署脚本，确保 Playground 链接正确指向部署路径。
+- [x] T019 [US4] 更新 `README.md` 和 API 文档，说明新的 `namespace`、`runImmediately` 和 DevTools 配置。
 
 ## 依赖关系
 

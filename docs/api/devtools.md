@@ -18,6 +18,7 @@ new DevTools(options?: DevToolsOptions)
 | `dockPosition` | `'right' \| 'bottom'` | `'right'` | 面板停靠位置 |
 | `language` | `'en' \| 'zh'` | `'en'` | 界面语言 |
 | `defaultZoom` | `number` | `1` | 时间线默认缩放级别 (0.5-5) |
+| `zoomStep` | `number` | `1000` | 缩放时间步长 (ms) |
 | `trigger` | `TriggerOptions` | - | 悬浮按钮配置 |
 
 ### TriggerOptions
@@ -189,6 +190,18 @@ new DevTools({
 - `1` - 默认缩放
 - `2` - 显示更多细节
 - `5` - 最大缩放
+
+## 缩放步长
+
+配置时间线缩放的步长，单位为毫秒：
+
+```typescript
+new DevTools({
+  zoomStep: 60000 // 1分钟
+})
+```
+
+默认值为 `1000` (1秒)。
 
 ## 悬浮按钮自定义
 
