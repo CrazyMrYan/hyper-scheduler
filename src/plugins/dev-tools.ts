@@ -78,7 +78,8 @@ export class DevTools implements HyperSchedulerPlugin {
                 schedule: task.schedule,
                 tags: task.tags || [],
                 error: task.status === TaskStatus.ERROR ? 'Execution failed' : null,
-                driver: scheduler.getTaskDriver(task.id)
+                driver: scheduler.getTaskDriver(task.id),
+                namespace: task.options?.namespace || 'default' // 添加 namespace
             }));
             },
             on: (evt: string, handler: (payload: any) => void) => {

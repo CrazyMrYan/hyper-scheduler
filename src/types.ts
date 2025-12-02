@@ -19,6 +19,16 @@ export interface TaskOptions {
   /** 任务执行失败时的错误处理回调 */
   onError?: (error: Error, taskId: string) => void;
   /**
+   * 任务隔离的命名空间。
+   * 默认值: 'default'
+   */
+  namespace?: string;
+  /**
+   * 如果为 true，任务将在调度器启动时（或在创建时如果调度器已启动）立即运行一次。
+   * 默认值: false
+   */
+  runImmediately?: boolean;
+  /**
    * 定时器驱动方式（仅浏览器环境有效）
    * - 'worker': 使用 Web Worker（默认，更精确，不受后台节流影响）
    * - 'main': 使用主线程 setTimeout（更简单，但可能受后台节流影响）
@@ -79,6 +89,7 @@ export interface TaskSnapshot {
   tags: string[];
   error: string | null;
   driver: 'worker' | 'main';
+  namespace?: string;
 }
 
 export interface DevToolsOptions {
@@ -90,6 +101,11 @@ export interface DevToolsOptions {
   language?: 'en' | 'zh';
   /** 时间线默认缩放级别 (0.5-5) */
   defaultZoom?: number;
+  /**
+   * 缩放时间步长 (单位毫秒)
+   * 默认值: 1000 (1秒)
+   */
+  zoomStep?: number;
   /** 悬浮按钮配置 */
   trigger?: {
     /** 背景色 */

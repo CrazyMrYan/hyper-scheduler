@@ -7,6 +7,9 @@ export const themeStyles = `
     --hs-panel-width: 400px;
     --hs-panel-height: 300px;
     
+    /* 等宽数字字体 */
+    --hs-font-monospaced-num: var(--hs-font-mono);
+
     /* Light Theme (Default) */
     --hs-bg: #ffffff;
     --hs-bg-secondary: #f3f4f6;
@@ -24,6 +27,7 @@ export const themeStyles = `
     --hs-radius: 6px;
     --hs-header-height: 40px;
     --hs-z-index: 9999;
+    --hs-z-index-overlay: 9998;
 
     /* Default display styles for the host itself */
     background: var(--hs-bg);

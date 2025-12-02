@@ -49,3 +49,5 @@ lib/
 .windsurf/
 origin-prd/
 specs/
+
+stats.html

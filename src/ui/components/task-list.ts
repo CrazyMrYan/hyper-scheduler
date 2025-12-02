@@ -8,6 +8,7 @@ export class TaskList extends HTMLElement {
   private _shadow: ShadowRoot;
   private _tasks: TaskSnapshot[] = [];
   private _lastExecutionTimes: Map<string, number> = new Map();
+  private _expandedNamespaces: Set<string> = new Set(['default']);
 
   constructor() {
     super();
@@ -33,6 +34,20 @@ export class TaskList extends HTMLElement {
     this.renderRows();
   }
 
+  private groupTasksByNamespace(tasks: TaskSnapshot[]): Map<string, TaskSnapshot[]> {
+    const groups = new Map<string, TaskSnapshot[]>();
+    
+    tasks.forEach(task => {
+      const ns = task.namespace || 'default';
+      if (!groups.has(ns)) {
+        groups.set(ns, []);
+      }
+      groups.get(ns)!.push(task);
+    });
+    
+    return groups;
+  }
+
   filter(text: string, map: Map<string, TaskSnapshot>) {
     const all = Array.from(map.values());
     if (!text) {
@@ -41,7 +56,8 @@ export class TaskList extends HTMLElement {
       const lower = text.toLowerCase();
       this._tasks = all.filter(t => 
         t.id.toLowerCase().includes(lower) || 
-        t.tags.some(tag => tag.toLowerCase().includes(lower))
+        t.tags.some(tag => tag.toLowerCase().includes(lower)) ||
+        (t.namespace && t.namespace.toLowerCase().includes(lower))
       );
     }
     this.renderRows();
@@ -129,21 +145,24 @@ export class TaskList extends HTMLElement {
     return `<span class="driver-badge main" title="${t('list.driverMain')}">M</span>`;
   }
 
-  private renderRows() {
-    const tbody = this._shadow.querySelector('tbody');
-    if (!tbody) return;
-
-    // Simple full re-render for MVP
-    tbody.innerHTML = this._tasks.map((task, index) => {
-      const lastExec = this._lastExecutionTimes.get(task.id);
-      const isRecentlyExecuted = lastExec && (Date.now() - lastExec < 1000);
-      const rowClass = isRecentlyExecuted ? 'recently-executed' : '';
-      
-      return `
-      <tr data-id="${task.id}" class="${rowClass}">
-        <td class="col-num">${index + 1}</td>
+  private renderTaskRow(task: TaskSnapshot, index: number, isNested: boolean = false): string {
+    const lastExec = this._lastExecutionTimes.get(task.id);
+    const isRecentlyExecuted = lastExec && (Date.now() - lastExec < 1000);
+    const rowClass = isRecentlyExecuted ? 'recently-executed' : '';
+    const nestedClass = isNested ? 'nested-task' : '';
+    
+    return `
+      <tr data-id="${task.id}" class="${rowClass} ${nestedClass}">
+        <td class="col-num">
+          ${isNested ? '' : index + 1}
+        </td>
         <td class="col-id">
-          <div class="task-id">${task.id}</div>
+          <div class="task-id">
+            ${task.id}
+            ${task.namespace && task.namespace !== 'default' && !isNested
+              ? `<span class="namespace-badge" title="Namespace">${task.namespace}</span>` 
+              : ''}
+          </div>
           <div class="tags">
             ${task.tags && task.tags.length > 0 
               ? task.tags.map(t => `<span class="tag">${t}</span>`).join('') 
@@ -167,7 +186,52 @@ export class TaskList extends HTMLElement {
         </td>
       </tr>
     `;
-    }).join('');
+  }
+
+  private renderRows() {
+    const tbody = this._shadow.querySelector('tbody');
+    if (!tbody) return;
+
+    const groups = this.groupTasksByNamespace(this._tasks);
+    
+    let html = '';
+    let globalIndex = 0;
+
+    // 1. 渲染 default 命名空间的任务 (扁平化)
+    const defaultTasks = groups.get('default');
+    if (defaultTasks && defaultTasks.length > 0) {
+        // Render tasks directly without a folder
+        html += defaultTasks.map((task) => this.renderTaskRow(task, ++globalIndex, false)).join('');
+    }
+    // 从 groups 中删除 default，以便后续只处理其他命名空间
+    groups.delete('default');
+
+    // 2. 渲染其他命名空间 (分层结构)
+    const sortedNamespaces = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+
+    sortedNamespaces.forEach(ns => {
+        const tasks = groups.get(ns)!;
+        const isExpanded = this._expandedNamespaces.has(ns);
+        const icon = isExpanded ? '▼' : '▶';
+        
+        // Namespace Row
+        html += `
+            <tr class="namespace-row ${isExpanded ? 'ns-expanded' : ''}" data-ns="${ns}">
+                <td colspan="8">
+                    <span class="ns-toggle">${icon}</span>
+                    <span class="ns-icon">📂</span>
+                    <span class="ns-name">${ns}</span>
+                    <span class="ns-count">(${tasks.length})</span>
+                </td>
+            </tr>
+        `;
+
+        if (isExpanded) {
+            html += tasks.map((task) => this.renderTaskRow(task, ++globalIndex, true)).join('');
+        }
+    });
+
+    tbody.innerHTML = html;
   }
 
   render() {
@@ -249,6 +313,18 @@ export class TaskList extends HTMLElement {
         }
         .task-id {
           font-weight: 600;
+        }
+        .namespace-badge {
+          display: inline-block;
+          background: var(--hs-bg-secondary);
+          color: var(--hs-text-secondary);
+          border: 1px solid var(--hs-border);
+          border-radius: 4px;
+          padding: 0 4px;
+          font-size: 9px;
+          margin-left: 6px;
+          font-family: monospace;
+          vertical-align: middle;
         }
         .tags {
           display: flex;
@@ -355,6 +431,40 @@ export class TaskList extends HTMLElement {
           color: var(--hs-text-secondary);
           border-color: var(--hs-border);
         }
+        /* Namespace Styles */
+        .namespace-row {
+          background: var(--hs-bg-secondary);
+          cursor: pointer;
+          font-weight: 600;
+          user-select: none;
+        }
+        .namespace-row:hover {
+          background: var(--hs-border);
+        }
+        .namespace-row td {
+          padding: 8px 12px;
+          border-bottom: 1px solid var(--hs-border);
+        }
+        .ns-toggle {
+          display: inline-block;
+          width: 20px;
+          text-align: center;
+          font-size: 10px;
+          color: var(--hs-text-secondary);
+          transition: transform 0.2s;
+        }
+        .ns-icon {
+          margin-right: 4px;
+        }
+        .ns-count {
+          font-weight: normal;
+          color: var(--hs-text-secondary);
+          font-size: 11px;
+          margin-left: 4px;
+        }
+        .nested-task .col-id {
+          padding-left: 32px !important;
+        }
       </style>
       <div class="table-container">
         <table>
@@ -382,6 +492,22 @@ export class TaskList extends HTMLElement {
     
     this._shadow.addEventListener('click', (e) => {
       const target = e.target as HTMLElement;
+      
+      // Handle Namespace Toggle
+      const nsRow = target.closest('.namespace-row');
+      if (nsRow) {
+        const ns = (nsRow as HTMLElement).dataset.ns;
+        if (ns) {
+          if (this._expandedNamespaces.has(ns)) {
+            this._expandedNamespaces.delete(ns);
+          } else {
+            this._expandedNamespaces.add(ns);
+          }
+          this.renderRows();
+        }
+        return;
+      }
+
       const btn = target.closest('button');
       
       // Handle Action Buttons
@@ -401,7 +527,7 @@ export class TaskList extends HTMLElement {
 
       // Handle Row Click (Selection)
       const tr = target.closest('tr');
-      if (tr && !target.closest('.col-actions')) {
+      if (tr && !target.closest('.col-actions') && !tr.classList.contains('namespace-row')) {
         const id = (tr as HTMLElement).dataset.id;
         this.dispatchEvent(new CustomEvent('task-select', {
           detail: id,

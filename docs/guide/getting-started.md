@@ -78,6 +78,44 @@ scheduler.createTask({
 scheduler.start();
 ```
 
+## 进阶功能
+
+### 1. 使用命名空间
+
+可以将任务隔离到不同的命名空间中，以便进行批量管理（如启动、停止特定组的任务）。
+
+```typescript
+scheduler.createTask({
+  id: 'system-log',
+  schedule: '1m',
+  handler: () => console.log('System Log'),
+  options: { namespace: 'system' }
+});
+
+scheduler.createTask({
+  id: 'user-notification',
+  schedule: '5m',
+  handler: () => console.log('User Notification'),
+  options: { namespace: 'user' }
+});
+
+// 仅启动 system 命名空间下的任务
+scheduler.start('system');
+```
+
+### 2. 立即触发
+
+默认情况下，任务会在第一次调度时间到达时执行。如果你希望任务在调度器启动时（或创建时）立即执行一次，可以使用 `runImmediately` 选项。
+
+```typescript
+scheduler.createTask({
+  id: 'init-check',
+  schedule: '1h',
+  handler: () => console.log('Checking status...'),
+  options: { runImmediately: true }
+});
+```
+
 ## 浏览器环境
 
 在浏览器中可以启用可视化调试工具，通过在 Scheduler 构造函数中传入 DevTools 插件实现：

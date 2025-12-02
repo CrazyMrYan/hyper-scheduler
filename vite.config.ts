@@ -18,6 +18,7 @@ export default defineConfig({
       fileName: 'index',
       formats: ['es', 'cjs', 'umd'],
     },
+    target: 'es2019',
     minify: 'terser',
     terserOptions: {
       compress: {

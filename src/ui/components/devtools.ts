@@ -26,6 +26,7 @@ export class DevTools extends HTMLElement {
   private $taskDetail!: TaskDetail;
   private $timeline!: Timeline;
   private $trigger!: HTMLElement;
+  private $overlay!: HTMLElement;
 
   constructor() {
     super();
@@ -175,6 +176,7 @@ export class DevTools extends HTMLElement {
     this.$taskDetail = this._shadow.querySelector('hs-task-detail') as TaskDetail;
     this.$timeline = this._shadow.querySelector('hs-timeline') as Timeline;
     this.$trigger = this._shadow.querySelector('hs-floating-trigger')!;
+    this.$overlay = this._shadow.querySelector('.overlay')!;
   }
 
   private bindStore() {
@@ -194,6 +196,7 @@ export class DevTools extends HTMLElement {
       if (isOpen) {
         this.$panel.classList.add('open');
         this.$trigger.style.display = 'none';
+        this.$overlay.style.display = 'block'; // 显示遮罩层
         // Ensure panel is visible
         if (pos === 'right') {
           this.$panel.style.right = '0';
@@ -203,6 +206,7 @@ export class DevTools extends HTMLElement {
       } else {
         this.$panel.classList.remove('open');
         this.$trigger.style.display = 'block';
+        this.$overlay.style.display = 'none'; // 隐藏遮罩层
         // Ensure panel is hidden
         if (pos === 'right') {
           this.$panel.style.right = `-${size.width}px`;
@@ -384,10 +388,9 @@ export class DevTools extends HTMLElement {
       this.store.setFilterText(text);
     });
 
-    // Listen to resize events from hs-resizer
-    this.addEventListener('resize', (e: Event) => {
-      const size = (e as CustomEvent).detail;
-      this.store.setPanelSize(size);
+    // 点击遮罩层关闭面板
+    this.$overlay.addEventListener('click', () => {
+      this.store.toggle();
     });
 
     this.$taskList.addEventListener('task-select', (e: Event) => {
@@ -443,6 +446,16 @@ export class DevTools extends HTMLElement {
           font-size: var(--hs-font-size);
           color: var(--hs-text);
           line-height: var(--hs-line-height);
+        }
+        .overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 100vw;
+          height: 100vh;
+          background: rgba(0, 0, 0, 0.5);
+          z-index: calc(var(--hs-z-index) - 1); /* 确保在面板之下，但在应用之上 */
+          display: none; /* 默认隐藏 */
         }
         .panel {
           position: fixed;
@@ -507,6 +520,7 @@ export class DevTools extends HTMLElement {
         }
       </style>
       
+      <div class="overlay"></div>
       <hs-floating-trigger></hs-floating-trigger>
       
       <div class="panel dock-right">
