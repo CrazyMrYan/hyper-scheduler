@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/public/logo.svg" width="120" height="120" alt="Hyper Scheduler Logo">
+  <img src="public/logo.svg" width="120" height="120" alt="Hyper Scheduler Logo">
 </p>
 
 <h1 align="center">Hyper Scheduler</h1>

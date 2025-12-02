@@ -1,6 +1,6 @@
 {
   "name": "hyper-scheduler",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron expressions and Web Workers.",
   "type": "module",
   "main": "./dist/index.umd.js",
@@ -16,7 +16,7 @@
     "dist",
     "README.md",
     "LICENSE",
-    "docs"
+    "public"
   ],
   "scripts": {
     "dev": "vite",

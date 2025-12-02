@@ -32,6 +32,17 @@ export class FloatingTrigger extends HTMLElement {
     this.render();
     this.addEventListeners();
     this.applyPosition(); // 首次渲染后应用位置和状态
+    
+    // 监听 resize 事件，重新计算位置以防止出界
+    window.addEventListener('resize', this.onResize.bind(this));
+  }
+
+  disconnectedCallback() {
+    window.removeEventListener('resize', this.onResize.bind(this));
+  }
+
+  private onResize() {
+    this.applyPosition(); // 重新应用位置（包含边界检查）
   }
 
   attributeChangedCallback(name: string, _oldVal: string, newVal: string) {
@@ -76,13 +87,37 @@ export class FloatingTrigger extends HTMLElement {
 
   private applyPosition() {
     const button = this._shadow.querySelector('button');
-    if (button && !this.style.getPropertyValue('--hs-trigger-position-set')) {
+    if (!button) return;
+
+    // 获取视口尺寸
+    const maxX = window.innerWidth - button.offsetWidth;
+    const maxY = window.innerHeight - button.offsetHeight;
+
+    if (!this.style.getPropertyValue('--hs-trigger-position-set')) {
       // 只有在没有保存位置时才应用默认位置属性
       const pos = this._position;
       button.style.top = pos.includes('top') ? '20px' : 'auto';
       button.style.bottom = pos.includes('bottom') ? '20px' : 'auto';
       button.style.left = pos.includes('left') ? '20px' : 'auto';
       button.style.right = pos.includes('right') ? '20px' : 'auto';
+    } else {
+      // 如果有保存的位置，执行边界检查 (Clamp)
+      // 获取当前的 CSS 变量值
+      let currentX = parseFloat(this.style.getPropertyValue('--hs-trigger-left') || '0');
+      let currentY = parseFloat(this.style.getPropertyValue('--hs-trigger-top') || '0');
+
+      // 限制范围
+      currentX = Math.max(0, Math.min(currentX, maxX));
+      currentY = Math.max(0, Math.min(currentY, maxY));
+
+      // 更新 CSS 变量和 button style
+      this.style.setProperty('--hs-trigger-left', `${currentX}px`);
+      this.style.setProperty('--hs-trigger-top', `${currentY}px`);
+      
+      button.style.left = `${currentX}px`;
+      button.style.top = `${currentY}px`;
+      button.style.right = 'auto';
+      button.style.bottom = 'auto';
     }
     this.updateCollapsedState();
   }
@@ -256,12 +291,18 @@ export class FloatingTrigger extends HTMLElement {
           transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), background 0.2s, box-shadow 0.2s;
           overflow: visible; /* 允许子元素（收起按钮）溢出或显示 */
         }
+        .icon {
+          transition: transform 0.2s;
+          display: flex;
+        }
         button:hover {
           ${this._bgColor ? `background: ${this._bgColor}; filter: brightness(1.1);` : 'background: var(--hs-primary-hover);'}
-          transform: scale(1.05);
           box-shadow: 0 6px 16px rgba(0,0,0,0.2);
         }
-        button:active {
+        button:hover .icon {
+          transform: scale(1.1);
+        }
+        button:active .icon {
           transform: scale(0.95);
         }
 
