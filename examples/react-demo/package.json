@@ -11,7 +11,7 @@
   "dependencies": {
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "hyper-scheduler": "^1.0.1"
+    "hyper-scheduler": "^1.1.2"
   },
   "devDependencies": {
     "@types/react": "^18.2.0",
