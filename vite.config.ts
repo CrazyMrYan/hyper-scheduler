@@ -15,7 +15,11 @@ export default defineConfig({
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
       name: 'HyperScheduler',
-      fileName: 'index',
+      fileName: (format) => {
+        if (format === 'umd') return 'index.umd.js';
+        if (format === 'cjs') return 'index.cjs';
+        return 'index.js';
+      },
       formats: ['es', 'cjs', 'umd'],
     },
     target: 'es2019',

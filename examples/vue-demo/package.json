@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "vue": "^3.4.0",
-    "hyper-scheduler": "^1.0.2"
+    "hyper-scheduler": "^1.1.2"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.0",
