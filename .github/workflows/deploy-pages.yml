@@ -64,7 +64,7 @@ jobs:
           # 部署后路径为 /examples/browser/index.html
           # 所以我们需要将 dist 放在 /dist
           mkdir -p docs/.vitepress/dist/dist
-          cp dist/index.umd.cjs docs/.vitepress/dist/dist/
+          cp dist/index.umd.js docs/.vitepress/dist/dist/
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
