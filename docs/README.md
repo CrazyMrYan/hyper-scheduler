@@ -116,5 +116,5 @@ npm run docs:build
 
 ## 相关链接
 
-- [相关文档](./link.md)
+- [相关文档](https://crazymryan.github.io/hyper-scheduler)
 ```

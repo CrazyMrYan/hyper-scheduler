@@ -14,10 +14,9 @@ export default defineConfig({
       { icon: 'github', link: 'https://github.com/CrazyMrYan/hyper-scheduler' }
     ],
     nav: [
-      { text: '指南', link: '/guide/getting-started' }, // 更新导航文本
-      { text: 'API 参考', link: '/api/scheduler' },     // 更新导航文本
-      { text: '示例演示', link: '/examples/' },
-      // 多版本导航占位符 - 实际实现可能需要自定义组件或更复杂的配置
+      { text: '指南', link: '/guide/getting-started' },
+      { text: 'API 参考', link: '/api/scheduler' },
+      { text: '示例', link: '/examples/' },
       {
         text: '版本',
         items: [
@@ -36,9 +35,13 @@ export default defineConfig({
         ]
       },
       {
-        text: '示例演示',
+        text: '示例',
         items: [
-          { text: '双线程心跳监控', link: '/examples/' }
+          { text: '在线演示', link: '/examples/' },
+          { text: '浏览器 (Browser)', link: 'https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/browser/index.html' },
+          { text: 'Vue 3', link: 'https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/vue-demo/src/App.vue' },
+          { text: 'React', link: 'https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/react-demo/src/App.jsx' },
+          { text: 'Node.js', link: 'https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/node/simple.js' }
         ]
       },
       {

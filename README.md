@@ -9,6 +9,10 @@
   <img src="https://img.shields.io/npm/l/hyper-scheduler" alt="License">
 </p>
 
+<p align="center">
+  <img src="./public/task-list.png" width="80%" alt="NPM Version">
+</p>
+
 A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron expressions and Web Workers.
 
 ## Features
@@ -52,4 +56,4 @@ scheduler.start();
 // Or start only 'system' namespace: scheduler.start('system');
 ```
 
-See [Documentation](docs/guide/getting-started.md) for more details.
+See [Documentation](https://crazymryan.github.io/hyper-scheduler) for more details.

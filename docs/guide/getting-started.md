@@ -120,6 +120,8 @@ scheduler.createTask({
 
 在浏览器中可以启用可视化调试工具，通过在 Scheduler 构造函数中传入 DevTools 插件实现：
 
+![](../public/task-list.png)
+
 ```typescript
 import { Scheduler, DevTools } from 'hyper-scheduler';
 
