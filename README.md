@@ -9,10 +9,6 @@
   <img src="https://img.shields.io/npm/l/hyper-scheduler" alt="License">
 </p>
 
-<p align="center">
-  <img src="./public/task-list.png" width="80%" alt="NPM Version">
-</p>
-
 A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron expressions and Web Workers.
 
 ## Features
@@ -22,6 +18,12 @@ A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron 
 - ⚡ **Immediate Trigger**: Option to execute tasks immediately upon start.
 - 🛠 **Debuggable**: Built-in debug panel and CLI output.
 - 📦 **Tiny**: < 20KB gzipped.
+
+## DevTools
+
+<p align="center">
+  <img src="./public/task-list.png" width="80%" alt="NPM Version">
+</p>
 
 ## Quick Start
 
