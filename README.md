@@ -21,9 +21,7 @@ A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron 
 
 ## DevTools
 
-<p align="center">
-  <img src="./public/task-list.png" width="80%" alt="NPM Version">
-</p>
+![](./public/task-list.png)
 
 ## Quick Start
 
