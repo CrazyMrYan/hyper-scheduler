@@ -118,8 +118,6 @@ jobs:
             ### 📚 Documentation
             
             https://crazymryan.github.io/hyper-scheduler/
-          files: |
-            dist/**/*
           draft: false
           prerelease: false
         env:
