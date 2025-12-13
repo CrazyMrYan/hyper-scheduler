@@ -51,17 +51,12 @@ jobs:
         run: |
           if gh release view "v${{ steps.package_version.outputs.version }}" >/dev/null 2>&1; then
             echo "exists=true" >> $GITHUB_OUTPUT
+            echo "⚠️ Release v${{ steps.package_version.outputs.version }} already exists. Skipping release creation..."
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Skip if release exists
-        if: steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'true'
-        run: |
-          echo "Release v${{ steps.package_version.outputs.version }} already exists. Skipping..."
-          exit 0
 
       - name: Create Git Tag
         if: steps.check_tag.outputs.exists == 'false'
