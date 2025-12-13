@@ -32,8 +32,79 @@ jobs:
           yarn install
           yarn build
 
+      - name: Setup Git
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch gh-pages branch
+        continue-on-error: true
+        run: |
+          git fetch origin gh-pages:gh-pages || echo "No gh-pages branch yet"
+
+      - name: Preserve old versions
+        continue-on-error: true
+        run: |
+          if git rev-parse --verify gh-pages >/dev/null 2>&1; then
+            git checkout gh-pages
+            if [ -d "versions" ]; then
+              cp -r versions /tmp/versions-backup
+              echo "✅ Backed up old versions"
+            fi
+            if [ -f "versions.json" ]; then
+              cp versions.json /tmp/versions.json
+              echo "✅ Backed up versions.json"
+            fi
+            git checkout main
+          fi
+
       - name: Build Documentation
         run: yarn docs:build
+
+      - name: Restore and update versions
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          echo "📦 Current version: v$VERSION"
+          
+          # 恢复旧版本
+          if [ -d "/tmp/versions-backup" ]; then
+            mkdir -p docs/.vitepress/dist/versions
+            cp -r /tmp/versions-backup/* docs/.vitepress/dist/versions/
+            echo "✅ Restored old versions"
+          fi
+          
+          # 创建当前版本目录
+          mkdir -p "docs/.vitepress/dist/versions/v$VERSION"
+          
+          # 复制当前构建到版本目录（排除 versions 目录本身）
+          rsync -av --exclude='versions' docs/.vitepress/dist/ "docs/.vitepress/dist/versions/v$VERSION/"
+          
+          # 生成版本列表（放在根目录，这样可以通过 /hyper-scheduler/versions.json 访问）
+          VERSIONS_FILE="docs/.vitepress/dist/versions.json"
+          echo "[" > "$VERSIONS_FILE"
+          FIRST=true
+          # 按版本号倒序排列
+          if [ -d "docs/.vitepress/dist/versions" ]; then
+            for dir in $(ls -1 docs/.vitepress/dist/versions/ | sort -V -r); do
+              if [ "$FIRST" = true ]; then
+                FIRST=false
+              else
+                echo "," >> "$VERSIONS_FILE"
+              fi
+              echo "  \"$dir\"" >> "$VERSIONS_FILE"
+            done
+          else
+            # 如果没有 versions 目录，只添加当前版本
+            echo "  \"v$VERSION\"" >> "$VERSIONS_FILE"
+          fi
+          echo "" >> "$VERSIONS_FILE"
+          echo "]" >> "$VERSIONS_FILE"
+          
+          echo "✅ Version list generated:"
+          cat "$VERSIONS_FILE"
+          
+          # 同时更新 public 目录中的版本文件（用于下次构建）
+          cp "$VERSIONS_FILE" docs/public/versions.json
 
       - name: Build React Demo
         run: |
