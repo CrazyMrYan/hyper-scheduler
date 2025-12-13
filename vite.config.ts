@@ -27,25 +27,35 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: false,
+        drop_console: true, // 生产环境移除 console
         drop_debugger: true,
+        pure_funcs: ['console.log', 'console.info', 'console.debug'], // 移除特定函数调用
+        passes: 2, // 多次压缩以获得更好的结果
+      },
+      mangle: {
+        toplevel: true, // 混淆顶级作用域的变量名
+        properties: {
+          regex: /^_/, // 混淆以 _ 开头的私有属性
+        },
       },
       format: {
-        comments: false,
+        comments: false, // 移除所有注释
       },
     },
     rollupOptions: {
-      // 确保外部化处理那些你不想打包进库的依赖
       external: [],
       output: {
-        // 在 UMD 构建模式下为这些外部化的依赖提供一个全局变量
         globals: {},
-        // 确保 Tree-shaking
-        manualChunks: undefined,
+        // 优化输出
+        compact: true,
+        generatedCode: {
+          constBindings: true,
+        },
       },
       treeshake: {
-        moduleSideEffects: true,
+        moduleSideEffects: false, // 更激进的 tree-shaking
         propertyReadSideEffects: false,
+        preset: 'smallest', // 使用最小化预设
       },
     },
   },
