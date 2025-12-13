@@ -118,14 +118,16 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish to npm
+      - name: Comment on npm publish
         if: steps.check_tag.outputs.exists == 'false' || (steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'false')
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "⚠️ npm 发布需要手动完成（因为启用了 2FA）"
+          echo "请在本地运行: npm publish --access public"
+          echo "或者在 npm 网站创建 Automation Token 并更新 GitHub Secrets 中的 NPM_TOKEN"
 
       - name: Publish to GitHub Packages
         if: steps.check_tag.outputs.exists == 'false' || (steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'false')
+        continue-on-error: true
         run: |
           echo "@crazymryan:registry=https://npm.pkg.github.com" > .npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
