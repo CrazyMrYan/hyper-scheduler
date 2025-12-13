@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/logo.svg" width="120" height="120" alt="Hyper Scheduler Logo">
+  <img src="https://github.com/CrazyMrYan/hyper-scheduler/raw/main/public/logo.svg" width="120" height="120" alt="Hyper Scheduler Logo">
 </p>
 
 <h1 align="center">Hyper Scheduler</h1>
@@ -21,7 +21,7 @@ A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron 
 
 ## DevTools
 
-![](./public/task-list.png)
+![](https://github.com/CrazyMrYan/hyper-scheduler/raw/main/public/task-list.png)
 
 ## Quick Start
 

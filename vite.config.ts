@@ -11,6 +11,7 @@ export default defineConfig({
       filename: 'stats.html'
     }),
   ],
+  publicDir: false, // 禁用 public 目录的复制
   build: {
     lib: {
       entry: resolve(__dirname, 'src/index.ts'),
