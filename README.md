@@ -19,6 +19,10 @@ A lightweight, dependency-free (core) JavaScript task scheduler supporting Cron 
 - 🛠 **Debuggable**: Built-in debug panel and CLI output.
 - 📦 **Tiny**: < 20KB gzipped.
 
+## DevTools
+
+![](./public/task-list.png)
+
 ## Quick Start
 
 ```bash
@@ -52,4 +56,4 @@ scheduler.start();
 // Or start only 'system' namespace: scheduler.start('system');
 ```
 
-See [Documentation](docs/guide/getting-started.md) for more details.
+See [Documentation](https://crazymryan.github.io/hyper-scheduler) for more details.

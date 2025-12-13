@@ -422,6 +422,17 @@ export class DevTools extends HTMLElement {
           break;
       }
     });
+
+    // Listen to resize events from the resizer component
+    this._shadow.addEventListener('resize', (e: Event) => {
+      const { width, height } = (e as CustomEvent).detail;
+      if (width !== undefined) {
+        this.store.setPanelSize({ width });
+      }
+      if (height !== undefined) {
+        this.store.setPanelSize({ height });
+      }
+    });
   }
 
   private startLoop() {

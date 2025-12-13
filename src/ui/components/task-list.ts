@@ -6,7 +6,8 @@ import { t } from '../i18n';
 
 export class TaskList extends HTMLElement {
   private _shadow: ShadowRoot;
-  private _tasks: TaskSnapshot[] = [];
+  private _allTasks: TaskSnapshot[] = []; // 保存所有任务的原始数据
+  private _filteredTasks: TaskSnapshot[] = []; // 当前过滤后的任务
   private _lastExecutionTimes: Map<string, number> = new Map();
   private _expandedNamespaces: Set<string> = new Set(['default']);
 
@@ -24,13 +25,14 @@ export class TaskList extends HTMLElement {
     
     // Track execution count changes to show flash animation
     newTasks.forEach(task => {
-      const oldTask = this._tasks.find(t => t.id === task.id);
+      const oldTask = this._allTasks.find(t => t.id === task.id);
       if (oldTask && task.executionCount > oldTask.executionCount) {
         this._lastExecutionTimes.set(task.id, Date.now());
       }
     });
     
-    this._tasks = newTasks;
+    this._allTasks = newTasks;
+    this._filteredTasks = newTasks; // 默认显示所有任务
     this.renderRows();
   }
 
@@ -49,12 +51,13 @@ export class TaskList extends HTMLElement {
   }
 
   filter(text: string, map: Map<string, TaskSnapshot>) {
-    const all = Array.from(map.values());
+    this._allTasks = Array.from(map.values()); // 更新原始数据
+    
     if (!text) {
-      this._tasks = all;
+      this._filteredTasks = this._allTasks;
     } else {
       const lower = text.toLowerCase();
-      this._tasks = all.filter(t => 
+      this._filteredTasks = this._allTasks.filter(t => 
         t.id.toLowerCase().includes(lower) || 
         t.tags.some(tag => tag.toLowerCase().includes(lower)) ||
         (t.namespace && t.namespace.toLowerCase().includes(lower))
@@ -154,7 +157,7 @@ export class TaskList extends HTMLElement {
     return `
       <tr data-id="${task.id}" class="${rowClass} ${nestedClass}">
         <td class="col-num">
-          ${isNested ? '' : index + 1}
+          ${index + 1}
         </td>
         <td class="col-id">
           <div class="task-id">
@@ -192,22 +195,15 @@ export class TaskList extends HTMLElement {
     const tbody = this._shadow.querySelector('tbody');
     if (!tbody) return;
 
-    const groups = this.groupTasksByNamespace(this._tasks);
+    const groups = this.groupTasksByNamespace(this._filteredTasks);
     
     let html = '';
     let globalIndex = 0;
 
-    // 1. 渲染 default 命名空间的任务 (扁平化)
-    const defaultTasks = groups.get('default');
-    if (defaultTasks && defaultTasks.length > 0) {
-        // Render tasks directly without a folder
-        html += defaultTasks.map((task) => this.renderTaskRow(task, ++globalIndex, false)).join('');
-    }
-    // 从 groups 中删除 default，以便后续只处理其他命名空间
-    groups.delete('default');
-
-    // 2. 渲染其他命名空间 (分层结构)
-    const sortedNamespaces = Array.from(groups.keys()).sort((a, b) => a.localeCompare(b));
+    // 1. 先渲染其他命名空间（目录）- 排在上面
+    const sortedNamespaces = Array.from(groups.keys())
+      .filter(ns => ns !== 'default')
+      .sort((a, b) => a.localeCompare(b));
 
     sortedNamespaces.forEach(ns => {
         const tasks = groups.get(ns)!;
@@ -227,9 +223,15 @@ export class TaskList extends HTMLElement {
         `;
 
         if (isExpanded) {
-            html += tasks.map((task) => this.renderTaskRow(task, ++globalIndex, true)).join('');
+            html += tasks.map((task) => this.renderTaskRow(task, globalIndex++, true)).join('');
         }
     });
+
+    // 2. 最后渲染 default 命名空间的任务（单个任务）- 排在下面
+    const defaultTasks = groups.get('default');
+    if (defaultTasks && defaultTasks.length > 0) {
+        html += defaultTasks.map((task) => this.renderTaskRow(task, globalIndex++, false)).join('');
+    }
 
     tbody.innerHTML = html;
   }

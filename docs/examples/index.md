@@ -1,4 +1,4 @@
-# 示例演示：双线程心跳监控
+# 示例演示
 
 本示例展示了 `Hyper Scheduler` 的核心能力：**双线程任务调度**。你可以同时在主线程（Main Thread）和 Web Worker 线程中运行任务，互不干扰。
 
@@ -74,102 +74,31 @@ const { Scheduler } = require('hyper-scheduler');
 
 ---
 
-## 完整代码示例
+## 源代码
 
-以下代码展示了如何在不同环境中实现上述场景，代码已包含完整的现代化 UI 逻辑。
+上述在线演示的完整源代码位于项目的 `examples/` 目录中：
 
-::: tip 提示
-点击下方选项卡切换查看不同环境的实现代码。
-:::
+| 环境 | 源代码 | 本地运行 |
+|------|--------|----------|
+| **浏览器原生 JS** | [`examples/browser/index.html`](https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/browser/index.html) | 直接打开文件或 `yarn dev` |
+| **Vue 3** | [`examples/vue-demo/src/App.vue`](https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/vue-demo/src/App.vue) | `cd examples/vue-demo && yarn dev` |
+| **React** | [`examples/react-demo/src/App.jsx`](https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/react-demo/src/App.jsx) | `cd examples/react-demo && yarn dev` |
+| **Node.js** | [`examples/node/simple.js`](https://github.com/CrazyMrYan/hyper-scheduler/blob/main/examples/node/simple.js) | `node examples/node/simple.js` |
 
-::: code-group
+### 核心代码片段
 
-```html [Browser (CDN)]
-<!DOCTYPE html>
-<html lang="zh-CN">
-<head>
-  <!-- ...样式代码省略，请参考 React/Vue 示例中的 CSS ... -->
-  <style>
-    /* 核心布局与样式 */
-    :root { --bg-color: #f8fafc; /* ... */ }
-    .dashboard { display: grid; grid-template-columns: 300px 1fr; /* ... */ }
-    /* 按钮状态控制 */
-    #btn-stop { display: none; }
-    body.running #btn-start { display: none; }
-    body.running #btn-stop { display: block; }
-  </style>
-</head>
-<body>
-  <div class="dashboard">
-    <!-- ... HTML 结构 ... -->
-    <div class="actions">
-      <button class="btn-start" id="btn-start">▶ 启动调度器</button>
-      <button class="btn-stop" id="btn-stop">⏹ 停止调度器</button>
-    </div>
-    <!-- ... -->
-  </div>
+所有示例都遵循相同的核心逻辑：
 
-  <script src="https://unpkg.com/hyper-scheduler/dist/index.umd.js"></script>
-  <script>
-    const { Scheduler, DevTools } = window.HyperScheduler;
+```javascript
+import { Scheduler, DevTools } from 'hyper-scheduler';
 
-    // 1. 初始化调度器
-    const scheduler = new Scheduler({
-      debug: true,
-      plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
-    });
+// 1. 创建调度器
+const scheduler = new Scheduler({
+  debug: true,
+  plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
+});
 
-    // 2. 注册主线程任务
-    scheduler.createTask({
-      id: 'main-heartbeat',
-      schedule: '3s',
-      options: { 
-        driver: 'main',
-        namespace: 'ui',
-        runImmediately: true
-      },
-      handler: () => log('❤️ [Main] 主线程心跳检测正常', 'error')
-    });
-
-    // 3. 注册 Worker 任务
-    scheduler.createTask({
-      id: 'worker-heartbeat',
-      schedule: '5s',
-      options: {
-        namespace: 'background'
-      },
-      handler: () => log('💙 [Worker] 后台线程任务执行中', 'info')
-    });
-
-    // 4. 按钮逻辑
-    document.getElementById('btn-start').onclick = () => {
-      scheduler.start();
-      document.body.classList.add('running');
-      log('🚀 调度器系统已启动', 'success');
-    };
-
-    document.getElementById('btn-stop').onclick = () => {
-      scheduler.stop();
-      document.body.classList.remove('running');
-      log('⏹️ 调度器系统已停止', 'info');
-    };
-  </script>
-</body>
-</html>
-```
-
-```javascript [Node.js]
-import { Scheduler } from 'hyper-scheduler';
-
-// 1. Node 环境初始化
-const scheduler = new Scheduler({ debug: true });
-
-// 辅助函数：格式化时间
-const time = () => new Date().toLocaleTimeString('zh-CN', { hour12: false });
-
-console.log('✨ 系统就绪，等待启动指令...');
-
-// 2. 主线程心跳
+// 2. 注册主线程任务
 scheduler.createTask({
   id: 'main-heartbeat',
   schedule: '3s',
@@ -178,165 +107,23 @@ scheduler.createTask({
     namespace: 'ui',
     runImmediately: true
   },
-  handler: () => {
-    console.log(`[${time()}] ❤️ [Main] 主线程心跳检测正常`);
-  }
+  handler: () => console.log('❤️ [Main] 主线程心跳检测正常')
 });
 
-// 3. Worker 线程心跳
+// 3. 注册 Worker 任务
 scheduler.createTask({
   id: 'worker-heartbeat',
   schedule: '5s',
   options: {
     namespace: 'background'
   },
-  handler: () => {
-    console.log(`[${time()}] 💙 [Worker] 后台线程任务执行中`);
-  }
+  handler: () => console.log('💙 [Worker] 后台线程任务执行中')
 });
 
-// 4. 启动
+// 4. 启动调度器
 scheduler.start();
-console.log(`[${time()}] 🚀 调度器已启动，按 Ctrl+C 退出`);
 ```
 
-```jsx [React]
-import { useState, useEffect, useRef } from 'react';
-import { Scheduler, DevTools } from 'hyper-scheduler';
-import './App.css';
-
-function App() {
-  const [logs, setLogs] = useState([]);
-  const [isRunning, setIsRunning] = useState(false);
-  const schedulerRef = useRef(null);
-  // ... 滚动条 ref 等 ...
-
-  useEffect(() => {
-    // 1. 初始化
-    schedulerRef.current = new Scheduler({ 
-      debug: true,
-      plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
-    });
-
-    // 2. 注册任务
-    // 主线程心跳 (明确指定 driver: 'main')
-    schedulerRef.current.createTask({
-      id: 'main-heartbeat',
-      schedule: '3s',
-      options: { 
-        driver: 'main',
-        namespace: 'ui',
-        runImmediately: true
-      }, 
-      handler: () => addLog('❤️ [Main] 主线程心跳检测正常', 'error')
-    });
-
-    // Worker 线程心跳 (默认即为 Worker 驱动)
-    schedulerRef.current.createTask({
-      id: 'worker-heartbeat',
-      schedule: '5s',
-      options: {
-        namespace: 'background'
-      },
-      handler: () => addLog('💙 [Worker] 后台线程任务执行中', 'info')
-    });
-
-    return () => {
-      if (schedulerRef.current) schedulerRef.current.stop();
-    };
-  }, []);
-
-  // 3. 切换逻辑
-  const handleToggle = () => {
-    if (isRunning) {
-      schedulerRef.current.stop();
-      addLog('⏹️ 调度器系统已停止', 'info');
-    } else {
-      schedulerRef.current.start();
-      addLog('🚀 调度器系统已启动', 'success');
-    }
-    setIsRunning(!isRunning);
-  };
-
-  return (
-    <div className="dashboard">
-      {/* ... UI 结构 ... */}
-      <button 
-        className={isRunning ? 'btn-stop' : 'btn-start'} 
-        onClick={handleToggle}
-      >
-        {isRunning ? '⏹ 停止调度器' : '▶ 启动调度器'}
-      </button>
-      {/* ... */}
-    </div>
-  );
-}
-```
-
-```vue [Vue 3]
-<script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
-import { Scheduler, DevTools } from 'hyper-scheduler'
-
-const scheduler = ref(null)
-const isRunning = ref(false)
-// ... 日志逻辑 ...
-
-onMounted(() => {
-  // 1. 初始化
-  scheduler.value = new Scheduler({ 
-    debug: true,
-    plugins: [new DevTools({ theme: 'auto', language: 'zh' })]
-  })
-  
-  // 主线程心跳 (明确指定 driver: 'main')
-  scheduler.value.createTask({
-    id: 'main-heartbeat',
-    schedule: '3s',
-    options: { 
-      driver: 'main', 
-      namespace: 'ui',
-      runImmediately: true
-    },
-    handler: () => addLog('❤️ [Main] 主线程心跳检测正常', 'error')
-  })
-
-  // Worker 线程心跳 (默认即为 Worker 驱动)
-  scheduler.value.createTask({
-    id: 'worker-heartbeat',
-    schedule: '5s',
-    options: {
-      namespace: 'background'
-    },
-    handler: () => addLog('💙 [Worker] 后台线程任务执行中', 'info')
-  })
-})
-
-// 3. 切换逻辑
-const handleToggle = () => {
-  if (isRunning.value) {
-    scheduler.value.stop()
-    addLog('⏹️ 调度器系统已停止', 'info')
-  } else {
-    scheduler.value.start()
-    addLog('🚀 调度器系统已启动', 'success')
-  }
-  isRunning.value = !isRunning.value
-}
-</script>
-
-<template>
-  <div class="dashboard">
-    <!-- ... UI 结构 ... -->
-    <button 
-      :class="isRunning ? 'btn-stop' : 'btn-start'" 
-      @click="handleToggle"
-    >
-      {{ isRunning ? '⏹ 停止调度器' : '▶ 启动调度器' }}
-    </button>
-    <!-- ... -->
-  </div>
-</template>
-```
-
+::: tip 提示
+点击上方表格中的源代码链接可以查看完整的实现，包括 UI 和样式代码。
 :::
