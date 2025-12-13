@@ -44,6 +44,24 @@ jobs:
           else
             echo "exists=false" >> $GITHUB_OUTPUT
           fi
+      
+      - name: Check if release exists
+        id: check_release
+        if: steps.check_tag.outputs.exists == 'true'
+        run: |
+          if gh release view "v${{ steps.package_version.outputs.version }}" >/dev/null 2>&1; then
+            echo "exists=true" >> $GITHUB_OUTPUT
+          else
+            echo "exists=false" >> $GITHUB_OUTPUT
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip if release exists
+        if: steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'true'
+        run: |
+          echo "Release v${{ steps.package_version.outputs.version }} already exists. Skipping..."
+          exit 0
 
       - name: Create Git Tag
         if: steps.check_tag.outputs.exists == 'false'
@@ -54,7 +72,7 @@ jobs:
           git push origin "v${{ steps.package_version.outputs.version }}"
 
       - name: Generate Changelog
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || (steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'false')
         id: changelog
         run: |
           # 获取上一个 tag
@@ -77,7 +95,7 @@ jobs:
           echo "EOF" >> $GITHUB_OUTPUT
 
       - name: Create GitHub Release
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || (steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'false')
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.package_version.outputs.version }}
@@ -108,13 +126,13 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish to npm
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || (steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'false')
         run: npm publish --access public
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
       - name: Publish to GitHub Packages
-        if: steps.check_tag.outputs.exists == 'false'
+        if: steps.check_tag.outputs.exists == 'false' || (steps.check_tag.outputs.exists == 'true' && steps.check_release.outputs.exists == 'false')
         run: |
           echo "@crazymryan:registry=https://npm.pkg.github.com" > .npmrc
           echo "//npm.pkg.github.com/:_authToken=${{ secrets.GITHUB_TOKEN }}" >> .npmrc
