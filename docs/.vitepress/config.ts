@@ -1,4 +1,27 @@
 import { defineConfig } from 'vitepress';
+import { readFileSync, existsSync } from 'fs';
+import { resolve } from 'path';
+
+// 读取版本信息
+const pkg = JSON.parse(readFileSync(resolve(__dirname, '../../package.json'), 'utf-8'));
+const currentVersion = `v${pkg.version}`;
+
+// 尝试读取已发布的版本列表
+let versions: string[] = [currentVersion];
+const versionsPath = resolve(__dirname, '../public/versions.json');
+if (existsSync(versionsPath)) {
+  try {
+    const versionsList = JSON.parse(readFileSync(versionsPath, 'utf-8'));
+    // 确保当前版本在列表中
+    if (!versionsList.includes(currentVersion)) {
+      versions = [currentVersion, ...versionsList];
+    } else {
+      versions = versionsList;
+    }
+  } catch (e) {
+    console.warn('Failed to read versions.json:', e);
+  }
+}
 
 export default defineConfig({
   base: '/hyper-scheduler/', // 设置 GitHub Pages 的基础路径
@@ -18,10 +41,14 @@ export default defineConfig({
       { text: 'API 参考', link: '/api/scheduler' },
       { text: '示例', link: '/examples/' },
       {
-        text: '版本',
+        text: currentVersion,
         items: [
-          { text: 'v1.0.0 (最新)', link: '/' },
-          // { text: 'v0.9.0', link: '/v0.9.0/' } // 示例历史版本
+          ...versions.slice(0, 5).map(v => ({
+            text: v === currentVersion ? `${v} (最新)` : v,
+            link: v === currentVersion ? '/' : `/versions/${v}/`
+          })),
+          { text: '查看所有版本', link: '/versions' },
+          { text: 'GitHub Releases', link: 'https://github.com/CrazyMrYan/hyper-scheduler/releases' }
         ]
       }
     ],
